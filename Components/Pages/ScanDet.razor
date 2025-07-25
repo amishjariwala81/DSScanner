@@ -1,0 +1,788 @@
+﻿@page "/scandet"
+
+@inject SfDialogService sfDialogService
+@inject NavigationManager Navmanage
+@inject HttpClient Http
+
+@using Newtonsoft.Json
+@using Syncfusion.Blazor.Popups
+@using System.Data
+@using JSCoreLibRazor
+@using SQLite
+@using Syncfusion.Blazor
+@using Syncfusion.Blazor.Lists
+@using System.Linq.Expressions
+@using Syncfusion.Blazor.Spinner
+@using System.Net.Http.Json;
+@using System.Net;
+@using Microsoft.Maui.Media;
+@using Microsoft.Maui.Storage;
+@using System.IO;
+@using System.Threading.Tasks;
+@using DSScanner.Data
+@using System.Reflection
+@using System.Dynamic;
+@using System.Linq;
+@using Syncfusion.Blazor.Data;
+
+
+<div id="page" class="page">
+    <header class="header">
+
+        <div class="site-brand">
+            <img src="/Images/logo.png" />
+        </div>
+        <div class="header-title">
+            <h1> Item detail </h1>
+        </div>        
+    </header> 
+    
+    <section class="section content px-2">
+        <div class="display-top-bar" style="margin-top:-20px">
+            <SfTextBox @bind-Value="@EntryNo" FloatLabelType="@FloatLabelType.Always" Placeholder="Entry No." Readonly></SfTextBox>
+            <SfTextBox Value=@SrNo Placeholder="Sauda No" FloatLabelType="@FloatLabelType.Always" Readonly></SfTextBox>
+            <SfTextBox Value=@Date Placeholder="Date" FloatLabelType="@FloatLabelType.Always" Readonly ></SfTextBox>            
+        </div>
+        <div class="display-top-bar" style="margin-top:-20px">
+            <SfTextBox Value=@Item Placeholder="Item Name" FloatLabelType="@FloatLabelType.Always" Readonly></SfTextBox>
+            <SfTextBox Value=@MergeNo Placeholder="Merge No" FloatLabelType="@FloatLabelType.Always" Readonly></SfTextBox>
+            <SfTextBox Value=@Grade Placeholder="Grade" FloatLabelType="@FloatLabelType.Always" Readonly></SfTextBox>
+            <SfTextBox Value=@LocalUOM Placeholder="UOM" FloatLabelType="@FloatLabelType.Always" Readonly></SfTextBox>
+        </div>
+
+        <div class="display-inline-btns" style="margin-top:-10px">
+            <SfNumericTextBox Value=@NoOfTaka Placeholder="Sauda Qty" FloatLabelType="@FloatLabelType.Always" ShowSpinButton="false" Readonly></SfNumericTextBox>
+            <SfNumericTextBox Value=@DelTaka Placeholder="Del Qty" FloatLabelType="@FloatLabelType.Always" ShowSpinButton="false" Readonly></SfNumericTextBox>
+            <SfNumericTextBox Value=@ScanTaka Placeholder="Scan Qty" FloatLabelType="@FloatLabelType.Always" ShowSpinButton="false" Readonly></SfNumericTextBox>
+            <SfNumericTextBox Value=@PrevTaka Placeholder="Prev. Qty" FloatLabelType="@FloatLabelType.Always" ShowSpinButton="false" Readonly></SfNumericTextBox>
+            <SfNumericTextBox @ref="BalQtyRef" style=@(BalQtyBgColor ? "background-color:red;" : "") Value=@balQty Placeholder="Bal Qty" FloatLabelType="@FloatLabelType.Always" ShowSpinButton="false" Readonly></SfNumericTextBox>
+        </div>
+        
+        <div class="row" >            
+            <div class="display-inline-btns" style="float:left;">
+                <SfTextBox @ref="@TextCtrl" @bind-Value="TakaName" FloatLabelType="@FloatLabelType.Always" Placeholder="Enter the Taka/Carton No."></SfTextBox>
+                <div class="display-inline-btns" style="float:right; margin-top:21px">
+                    <SfButton IconCss="e-icons e-edit" title="Change selected entry" Disabled=@BalQtyBgColor @onclick="EditEntry"></SfButton>
+                    <SfButton IconCss="e-icons e-trash" title="Delete selected entry" @onclick="DeleteEntry"></SfButton>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row" style="margin-top:1px">
+            <div class="col-6" style="margin-top:23px">
+                <SfTextBox class="e-control e-textbox e-lib e-input" placeholder="Search..." ShowClearButton="true" Enabled=@(!ActBtnDisabled)
+                       Input='((e) => RazorFunc.SearchInGrid(e, ScanDefaultGrid))'></SfTextBox>
+            </div>    
+            <div class="col-6">
+                <SfTextBox Value=@PrevTakaNo Placeholder="Prev. Scan Taka/Carton No." FloatLabelType="@FloatLabelType.Always" Readonly></SfTextBox>        
+            </div>
+            
+        </div>        
+        
+        <div class="row" style="margin-top:10px">
+            <SfGrid class="tab-grid-min-height" @ref="ScanDefaultGrid" DataSource="@ScanDataSource" GridLines="GridLine.Both" RowHeight="@CoreVars.ROWHEIGHT" AllowResizing="true" EnableAutoFill="true">
+                <GridSelectionSettings EnableToggle="false"></GridSelectionSettings>
+                <GridEvents RowSelected="RowSelectHandler" TValue="ExpandoObject"></GridEvents>
+                <GridEditSettings AllowAdding="false" AllowDeleting="true" AllowEditing="false"></GridEditSettings>
+                <GridColumns>
+                @foreach (var stru in DataTbl.Columns)
+                {                    
+                    var field = stru.ToString();
+                    var header = GetHeaderText(field);
+                    bool hidden = IsHidden(field);
+                    bool primaryKey = IsPrimaryKey(field);
+                        <GridColumn Field=@field
+                    HeaderText=@header
+                    TextAlign="TextAlign.Left"
+                    AutoFit="true"
+                    AllowResizing="true"
+                    Visible=@(!primaryKey ? !hidden : false)
+                    IsPrimaryKey=@primaryKey />
+                }
+            </GridColumns>
+            <GridAggregates>
+                <GridAggregate>
+                    <GridAggregateColumns>
+                        @foreach (var kp in AggrCols)
+                        {
+                            var FldName = kp.Field;
+                            <GridAggregateColumn Field=@FldName Type="AggregateType.Sum" Format="n2">
+                            <FooterTemplate>
+                                @{
+                                    var aggregate = (context as AggregateTemplateContext);
+                                    var CalcType = aggregate.Sum;
+                                    <div>
+                                        @CalcType
+                                    </div>
+                                }
+                                </FooterTemplate>
+                            </GridAggregateColumn>
+                        }
+                    </GridAggregateColumns>
+                </GridAggregate>
+            </GridAggregates>
+            </SfGrid>
+        </DIV>
+    </section>
+
+    <footer class="footer">
+        <div class="d-flex align-content-center justify-content-between flex-nowrap p-2 gap-2">
+            <button class="btn btn-primary w-100" title="back" @onclick="SaveData" >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="rgba(255,255,255,1)"><path d="M7 19V13H17V19H19V7.82843L16.1716 5H5V19H7ZM4 3H17L21 7V20C21 20.5523 20.5523 21 20 21H4C3.44772 21 3 20.5523 3 20V4C3 3.44772 3.44772 3 4 3ZM9 15V19H15V15H9Z"></path></svg>
+            </button>
+            <button class="btn btn-primary w-100" title="back" @onclick="Cancel">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="rgba(255,255,255,1)"><path d="M11.9997 10.5865L16.9495 5.63672L18.3637 7.05093L13.4139 12.0007L18.3637 16.9504L16.9495 18.3646L11.9997 13.4149L7.04996 18.3646L5.63574 16.9504L10.5855 12.0007L5.63574 7.05093L7.04996 5.63672L11.9997 10.5865Z"></path></svg>                
+            </button>            
+        </div>
+    </footer>    
+    <HelpDesk></HelpDesk>    
+    <ExitModal></ExitModal>    
+</div>
+<style>
+    .e-dialog .e-dlg-header-content {
+    background-color: #00aeff
+    }
+
+    .e-dialog .e-dlg-header {
+    color: #fff
+    }
+
+    .e-dialog .e-dlg-header .e-btn-icon.e-icon-dlg-close {
+    color: #fff
+    }
+
+    .e-btn-icon.e-icons.e-close-icon.e-icon-left:before {
+    content: '\e825';
+    }
+
+</style>
+
+@code {
+    List<string> StatusList = new List<string>() { "Scanned", "Not scanned", "All" };
+    private static string Status { get; set; } = "Scanned";
+    private SfGrid<System.Dynamic.ExpandoObject> ScanDefaultGrid { get; set; }  
+    private List<System.Dynamic.ExpandoObject>? ScanDataSource = new List<System.Dynamic.ExpandoObject>();
+    private DataTable? DataTbl = new DataTable();
+    private DataTable? ActionDataTbl = new DataTable();
+    private readonly DatabaseContext _context = new DatabaseContext();
+    private bool ActBtnDisabled = false;
+    private string TakaName { get; set; }
+    private IEnumerable<ProductionTbl> ScannedData;
+    private string SrNo = string.Empty;
+    private string Date = string.Empty;
+    private string Item = string.Empty;
+    private string Grade = string.Empty;
+    private string MergeNo = string.Empty;
+    private double NoOfTaka = 0;
+    private string ItemId = string.Empty;
+    private string MergeNoId = string.Empty;
+    private string GradeId = string.Empty;
+    private double PrevQty = 0;
+    private double PrevTaka = 0;
+    bool retval = false;
+    double ScanTaka = 0;
+    string SaudaId = string.Empty;
+    string SaudaDetId = string.Empty;
+    double balQty = 0;
+    double DelTaka = 0;
+    string UOM = string.Empty;
+    List<string> TakaNameLst1 = new List<string>();
+    List<string> UniqTakaLst = new List<string>();
+    private SfTextBox TextCtrl { get; set; } = new SfTextBox();
+    private SfTextBox TextCtrl2 { get; set; } = new SfTextBox();
+    private string? EntryNo { get; set; } 
+    private int RecId = 0;
+    private string PrevTakaNo = string.Empty;
+    private List<Syncfusion.Blazor.Data.Aggregate> AggrCols = new List<Syncfusion.Blazor.Data.Aggregate>();
+    private IDictionary<string, object> aggregateValue ;
+    private string LocalUOM;
+    private SfNumericTextBox<double> BalQtyRef;
+    private bool BalQtyBgColor = false;
+
+    private readonly HashSet<string> hiddenFields = new()
+    {
+        "ItemId", "MergeNoId", "GradeId", "Scanned", "ShadeId", "PlantId",
+        "SadaId", "CrtnSold", "Exported", "SadaDetId", "EntSr"
+    };
+
+    private string GetHeaderText(string field) => field switch
+    {
+        "TakaNo" => "Tk/Ctn.",
+        "SrNo" => "Srl",
+        "EntryNo" => "EntNo",
+        "NetWt" => "Nwt",
+        "Meters" => "Mtr",
+        _ => field
+    };
+
+    private bool IsHidden(string field) => hiddenFields.Contains(field) || field == "Id";
+
+    private bool IsPrimaryKey(string field) => field == "Id";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Task.Delay(200); 
+        SaudaId = Global.SaudId.ToString();
+        SaudaDetId = Global.SaudDetId.ToString();
+        await TextCtrl.FocusAsync();
+
+        Expression<Func<SaudTbl, bool>> predicare = Saudatbl => (Saudatbl.Id == Global.SaudId && Saudatbl.SaudaType == Global.SaudaType);
+        var ScannedData = (await _context.GetFileteredAsync(predicare)).ToList();
+        // && user.EntryNo != EntryNo
+        Expression<Func<ProductionTbl, bool>> predicare2 = Productiontbl => (Productiontbl.SadaId == Global.SaudId && Productiontbl.SadaDetId == Global.SaudDetId && Productiontbl.Exported == "Y" );
+        var PreQty = (await _context.GetFileteredAsync(predicare2)).ToList();
+        PrevQty = PreQty.Count();
+        var Obj = ScannedData.FirstOrDefault();
+        if( Obj != null)
+        {
+            ItemId = Obj.ItemId.ToString();
+            MergeNoId = Obj.MergeNoId.ToString();
+            GradeId = Obj.GradeId.ToString();
+            SrNo = Obj.SNo;
+            Date = Obj.SDate;
+            Item = Obj.ItemName;
+            Grade = Obj.Grade;
+            MergeNo = Obj.MergeNo;
+            NoOfTaka = Obj.OrdQty;
+            balQty = Obj.BalQty;
+            DelTaka = Obj.DelQty;
+            UOM = Obj.UOM;
+        }        
+        if(UOM == "PCS")
+        {
+            LocalUOM = "Pcs";
+        }
+        else if(UOM == "MTR")
+        {
+            LocalUOM = "Meters";
+        }
+        else
+        {
+            LocalUOM = "NetWt";
+        }
+        BalQtyBgColor = (balQty == 0 ? true : false);        
+        AggrCols.Add(new Aggregate() { Field = "Pcs", Type = "Sum" });
+        AggrCols.Add(new Aggregate() { Field = "Meters", Type = "Sum" });
+        AggrCols.Add(new Aggregate() { Field = "NetWt", Type = "Sum" });
+        AggrCols.Add(new Aggregate() { Field = "EntSr", Type = "Count" });
+        DisplayData();
+    }
+    private void back()
+    {
+        Navmanage.NavigateTo("/dashboard");
+    }
+
+    private DataTable ListToDataTable<T>(List<T> items)
+    {
+        DataTable dataTable = new DataTable(typeof(T).Name);        
+        PropertyInfo[] Props = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance);
+        foreach (PropertyInfo prop in Props)
+        {            
+            dataTable.Columns.Add(prop.Name);
+        }
+        foreach (T item in items)
+        {
+            var values = new object[Props.Length];
+            for (int i = 0; i < Props.Length; i++)
+            {
+                values[i] = Props[i].GetValue(item, null);
+            }
+            dataTable.Rows.Add(values);
+        }
+        return dataTable;
+    }
+    IDictionary<string, object>? selRec;
+    private void RowSelectHandler(RowSelectEventArgs<ExpandoObject> args)
+    {
+        selRec = args.Data as IDictionary<string, object>;
+        RecId = int.Parse(selRec["Id"].ToString().Trim());
+    }
+    private async void DisplayData()
+    {
+        try
+        {                        
+            Expression<Func<ProductionTbl, bool>> predicare = Productiontbl => (Productiontbl.SadaId == Global.SaudId && Productiontbl.SadaDetId == Global.SaudDetId && Productiontbl.Exported != "Y" && Productiontbl.EntryNo == Global.EntryNo );
+            var ScannedData = (await _context.GetFileteredAsync(predicare)).ToList();           
+            DataTbl = ListToDataTable(ScannedData);
+            ScanDataSource = new List<System.Dynamic.ExpandoObject>();
+            if (DataTbl.Rows.Count > 0)
+            {                
+                foreach (DataRow row in DataTbl.Rows)
+                {
+                    dynamic e = new ExpandoObject();                    
+                    foreach (DataColumn col in DataTbl.Columns)
+                    {                        
+                        ((IDictionary<string, object>)e).Add(col.ColumnName, row.ItemArray[col.Ordinal]);                        
+                    }
+                    ScanDataSource.Add(e);
+                }
+            }            
+            await ScanDefaultGrid.Refresh();
+        }
+        catch (Exception ex)
+        {
+            await sfDialogService.AlertAsync(ex.Message, CoreVars.EXERROR);
+        }
+        if(ScanDataSource != null)
+        {
+            aggregateValue = DataUtil.PerformAggregation(ScanDataSource, AggrCols);
+        }
+        BalQtyFunc();
+        StateHasChanged();
+    }
+
+    private async void EditEntry()
+    {
+        try
+        {
+            TakaNameLst1.Add("Taka");
+            if (!string.IsNullOrEmpty(TakaName))
+            {
+                Expression<Func<ProductionTbl, bool>> predicare1 = Productiontbl => (Productiontbl.SadaId == Global.SaudId && Productiontbl.SadaDetId == Global.SaudDetId);
+                var TakaLst = (await _context.GetFileteredAsync(predicare1)).ToList();
+                if (TakaLst.Count() != 0)
+                {
+                    if (TakaNameLst1.Count == 1)
+                    {
+                        foreach (var data in TakaLst)
+                        {
+                            TakaNameLst1.Add(data.TakaNo.ToString().Trim());
+                        }
+                    }
+                }
+                TakaName = TakaName.Trim();
+                Expression<Func<ProductionTbl, bool>> predicare2 = Productiontbl => (Productiontbl.TakaNo == TakaName);
+                var ScannedData = (await _context.GetFileteredAsync(predicare2)).ToList();
+                var Obj = ScannedData.FirstOrDefault();
+                if (ScannedData.Count != 0)
+                {
+                    if (balQty >= (UOM == "MTR" ? Obj.Meters  : (UOM == "PCS" ? 0 : Obj.NetWt))) //balQty > 0
+                    {                    
+                        if (ItemId == Obj.ItemId.ToString().Trim())
+                        {
+                            if (MergeNoId == Obj.MergeNoId.ToString().Trim())
+                            {
+                                if (GradeId == Obj.GradeId.ToString().Trim())
+                                {                                    
+                                    if (!string.IsNullOrEmpty(Obj.EntryNo) )
+                                    {
+                                        await sfDialogService.AlertAsync((Global.ItemType=="YARN" ? "Crtn No." : "Taka No." ) +": "+ TakaName + " already scanned in entry no : "+Obj.EntryNo.ToString(), CoreVars.ERROR);
+                                        retval = false;
+                                    }
+                                    else
+                                    {
+                                        retval = true;
+                                        if (!TakaNameLst1.Contains(TakaName))
+                                        {
+                                            TakaNameLst1.Add(TakaName);
+                                        }
+                                        else
+                                        {
+                                            await sfDialogService.AlertAsync((Global.ItemType=="YARN" ? "Crtn No." : "Taka No." ) + TakaName + " is already scanned current entry.", CoreVars.ERROR);
+                                            retval = false;
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    retval = false;
+                                    await sfDialogService.AlertAsync("Grade not matching with sales order grade.", CoreVars.ERROR);
+                                }
+                            }
+                            else
+                            {
+                                retval = false;
+                                await sfDialogService.AlertAsync("MergeNo not matching with sales order mergeno .", CoreVars.ERROR);
+                            }
+                        }
+                        else
+                        {
+                            retval = false;
+                            await sfDialogService.AlertAsync("Item not matching with sales order item.", CoreVars.ERROR);
+                        }
+
+                        if (retval)
+                        {
+                            DataTbl = ListToDataTable(ScannedData);
+                            if (DataTbl.Rows.Count > 0)
+                            {
+                                foreach (DataRow row in DataTbl.Rows)
+                                {
+                                    System.Dynamic.ExpandoObject e = new System.Dynamic.ExpandoObject();
+                                    foreach (DataColumn col in DataTbl.Columns)
+                                    {                                    
+                                        if (col.ColumnName == "Pcs")
+                                        {
+                                            e.TryAdd(col.ColumnName, 1);
+                                        }
+                                        else
+                                        {
+                                            e.TryAdd(col.ColumnName, row.ItemArray[col.Ordinal]);
+                                        }
+                                    }
+                                    ScanDataSource.Add(e);
+                                }
+                            }
+                            await ScanDefaultGrid.Refresh();
+                            aggregateValue = DataUtil.PerformAggregation(ScanDataSource, AggrCols);
+                            ScanTaka = Convert.ToDouble(aggregateValue.FirstOrDefault(itm => itm.Key.Contains(LocalUOM)).Value);
+                            balQty = Math.Round(NoOfTaka - DelTaka - ScanTaka - PrevTaka, 2);
+                            //balQty = NoOfTaka - ScanTaka - PrevTaka;
+                            PrevTakaNo = TakaName;
+                        }
+                    }
+                    else
+                    {                    
+                        await sfDialogService.AlertAsync("Sorry! can not add more Taka/Carton No. Your Current Qty "+ (UOM == "MTR" ? Obj.Meters  : Obj.NetWt) +" and Exceeding balance Qty " + balQty + ".", CoreVars.ERROR);
+                    }
+                }
+                else
+                {                    
+                    await sfDialogService.AlertAsync("Taka/Carton No. not found in stock.", CoreVars.ERROR);
+                }                
+            }
+            else
+            {
+                await sfDialogService.AlertAsync( "Taka/Carton No. can not be empty.", CoreVars.ERROR);
+            }
+            if (balQty <= 0)
+            {
+                BalQtyBgColor = true;
+            }
+            TakaName = "";
+            await Task.Delay(100);
+            await TextCtrl.FocusAsync();
+            StateHasChanged();        
+        }
+        catch (Exception ex)
+        {
+            await sfDialogService.AlertAsync("EditEntry =>"+ex.Message, CoreVars.EXERROR);
+        }
+    }
+
+    private async void SaveData()
+    {
+        try
+        {
+            if (ScanDataSource.Count() > 0)
+            {            
+                foreach (ExpandoObject SaveOrdRec in ScanDataSource)
+                {
+                    ProductionTbl ProdLst;
+                    ProdLst = new ProductionTbl();
+                    foreach (KeyValuePair<string, object> data in SaveOrdRec)
+                    {
+                        if (data.Key == "Id")
+                        {
+                            ProdLst.Id = int.Parse(data.Value.ToString());
+                        }
+                        if (data.Key == "SrNo")
+                        {
+                            ProdLst.SrNo = data.Value.ToString();
+                        }
+                        if (data.Key == "SadaId")
+                        {
+                            ProdLst.SadaId = Global.SaudId;
+                        }
+                        if (data.Key == "SadaDetId")
+                        {
+                            ProdLst.SadaDetId = Global.SaudDetId;
+                        }
+                        if (data.Key == "PDate")
+                        {
+                            ProdLst.PDate = data.Value.ToString();
+                        }
+                        if (data.Key == "TakaNo")
+                        {
+                            ProdLst.TakaNo = data.Value.ToString();
+                        }
+                        if (data.Key == "ItemName")
+                        {
+                            ProdLst.ItemName = data.Value.ToString();
+                        }
+                        if (data.Key == "ItemId")
+                        {
+                            ProdLst.ItemId = int.Parse(data.Value.ToString());
+                        }
+                        if (data.Key == "MergeNo")
+                        {
+                            ProdLst.MergeNo = data.Value.ToString();
+                        }
+                        if (data.Key == "MergeNoId")
+                        {
+                            ProdLst.MergeNoId = int.Parse(data.Value.ToString());
+                        }
+                        if (data.Key == "Grade")
+                        {
+                            ProdLst.Grade = data.Value.ToString();
+                        }
+                        if (data.Key == "GradeId")
+                        {
+                            ProdLst.GradeId = int.Parse(data.Value.ToString());
+                        }
+                        if (data.Key == "NetWt")
+                        {
+                            ProdLst.NetWt = double.Parse(data.Value.ToString());
+                        }
+                        if (data.Key == "Meters")
+                        {
+                            ProdLst.Meters = double.Parse(data.Value.ToString());
+                        }
+                        if (data.Key == "Shade")
+                        {
+                            ProdLst.Shade = data.Value.ToString();
+                        }
+                        if (data.Key == "ShadeId")
+                        {
+                            ProdLst.ShadeId = data.Value.ToString();
+                        }
+                        if (data.Key == "Plant")
+                        {
+                            ProdLst.Plant = data.Value.ToString();
+                        }
+                        if (data.Key == "PlantId")
+                        {
+                            ProdLst.PlantId = int.Parse(data.Value.ToString());
+                        }
+                        if (data.Key == "Exported")
+                        {
+                            ProdLst.Exported = "";
+                        }
+                        if (data.Key == "EntryNo")
+                        {
+                            ProdLst.EntryNo = EntryNo.ToString().Trim();
+                        }
+                        if (data.Key == "EntSr")
+                        {
+                            string [] str   = EntryNo.Split('/');
+                            ProdLst.EntSr = int.Parse(str[1]);
+                        }
+                        if (data.Key == "Pcs")
+                        {
+                            ProdLst.Pcs = 1;
+                        }
+                    }
+                    await _context.UpdateItemAsync<ProductionTbl>(ProdLst);
+                }
+                UpdateSaudMst("Y");
+                await sfDialogService.AlertAsync("Data saved successfully.", CoreVars.APPDATAMANAGER);
+                Cancel();
+            }
+            else
+            {
+                await sfDialogService.AlertAsync("No records found.", CoreVars.APPDATAMANAGER);
+            }        
+            DisplayData();
+        }
+        catch (Exception ex)
+        {
+            await sfDialogService.AlertAsync("SaveData =>"+ex.Message, CoreVars.EXERROR);
+        }
+    }
+
+    private async void Cancel()
+    {
+        Navmanage.NavigateTo("/chlndet");
+    }
+
+    private async void DeleteEntry()
+    {
+        try
+        {
+            bool RecSel = await IsRecordSelected(ScanDefaultGrid);
+            if (RecSel)
+            {
+                string TakaCrtnNo = selRec["TakaNo"].ToString().Trim();
+                bool isConfirm = await sfDialogService.ConfirmAsync("Are you sure to delete Taka/Carton No. "+ TakaCrtnNo  +" ?", CoreVars.APPMANAGER);
+                if (isConfirm)
+                {
+                    Expression<Func<ProductionTbl, bool>> predicare = Productiontbl => (Productiontbl.Id == RecId && Productiontbl.SadaId != 0);
+                    var CheckSauda = (await _context.GetFileteredAsync(predicare)).ToList();
+                    var Obj = CheckSauda.FirstOrDefault();
+                    if (Obj != null)
+                    {
+                        ProductionTbl ProdLst;
+                        ProdLst = new ProductionTbl();
+                        ProdLst.Id = int.Parse(selRec["Id"].ToString().Trim());
+                        ProdLst.SrNo = selRec["SrNo"].ToString().Trim();
+                        ProdLst.SadaId = 0;
+                        ProdLst.SadaDetId = 0;
+                        ProdLst.PDate = selRec["PDate"].ToString().Trim();
+                        ProdLst.TakaNo = selRec["TakaNo"].ToString().Trim();
+                        ProdLst.ItemName = selRec["ItemName"].ToString().Trim();
+                        ProdLst.ItemId = int.Parse(selRec["ItemId"].ToString().Trim());
+                        ProdLst.MergeNo = selRec["MergeNo"].ToString().Trim();
+                        ProdLst.MergeNoId = int.Parse(selRec["MergeNoId"].ToString().Trim());
+                        ProdLst.Grade = selRec["Grade"].ToString().Trim();
+                        ProdLst.GradeId = int.Parse(selRec["GradeId"].ToString().Trim());
+                        ProdLst.NetWt = double.Parse(selRec["NetWt"].ToString().Trim());
+                        ProdLst.Meters = double.Parse(selRec["Meters"].ToString().Trim());
+                        ProdLst.Shade = selRec["Shade"].ToString().Trim();
+                        ProdLst.ShadeId = selRec["ShadeId"].ToString().Trim();
+                        ProdLst.Plant = selRec["Plant"].ToString().Trim();
+                        ProdLst.PlantId = int.Parse(selRec["PlantId"].ToString().Trim());
+                        ProdLst.Exported = "";
+                        ProdLst.Pcs = 0;
+                        await _context.UpdateItemAsync<ProductionTbl>(ProdLst);
+                        TakaNameLst1.Remove(selRec["TakaNo"].ToString().Trim());
+                        await this.ScanDefaultGrid.DeleteRecordAsync();
+                        await ScanDefaultGrid.Refresh();
+                        if (ScanDataSource != null)
+                        {
+                            aggregateValue = DataUtil.PerformAggregation(ScanDataSource, AggrCols);
+                        }
+                        BalQtyFunc();
+                        UpdateSaudMst("Y");
+                        Expression<Func<ProductionTbl, bool>> predicare2 = Productiontbl => (Productiontbl.SadaId == Global.SaudId && Productiontbl.SadaDetId == Global.SaudDetId && Productiontbl.Exported != "Y");
+                        var CountTaka = (await _context.GetFileteredAsync(predicare2)).ToList();
+                        if (CountTaka.Count() <= 0)
+                        {
+                            UpdateSaudMst("");
+                        }
+                    }
+                    else
+                    {
+                        TakaNameLst1.Remove(selRec["TakaNo"].ToString().Trim());
+                        await this.ScanDefaultGrid.DeleteRecordAsync();
+                        await ScanDefaultGrid.Refresh();
+                        if (ScanDataSource != null)
+                        {
+                            aggregateValue = DataUtil.PerformAggregation(ScanDataSource, AggrCols);
+                        }
+                        BalQtyFunc();
+                    }
+                    await Task.Delay(100);
+                    await sfDialogService.AlertAsync("Data Deleted Successfullly.", CoreVars.ERROR);
+                    BalQtyBgColor = false;
+                    StateHasChanged();
+                }
+            } 
+        }
+        catch (Exception ex)
+        {
+            await sfDialogService.AlertAsync("DeleteEntry =>"+ex.Message, CoreVars.EXERROR);
+        }
+    }
+    private async Task<bool> IsRecordSelected(SfGrid<System.Dynamic.ExpandoObject> DefaultGrid) // to be added in library
+    {
+        bool Retval = true;
+        try
+        {
+            var getSelected = await DefaultGrid.GetSelectedRowIndexesAsync();
+            if (getSelected.Count <= 0)
+            {
+                Retval = false;
+                await sfDialogService.AlertAsync("Please select line item to make any data operation.", CoreVars.APPDATAMANAGER);
+            }
+        }   
+        catch (Exception ex)
+        {
+            await sfDialogService.AlertAsync("IsRecordSelected => " + ex.Message, CoreVars.ERROR);
+        }
+        return Retval;
+    }   
+
+    private async void UpdateSaudMst(string str)
+    {    
+        try
+        {
+            Expression<Func<ProductionTbl, bool>> predicare2 = Productiontbl => (Productiontbl.SadaId == Global.SaudId && Productiontbl.SadaDetId == Global.SaudDetId);
+            var CountTaka = (await _context.GetFileteredAsync(predicare2)).ToList();
+            int BalTaka = CountTaka.Count();
+            Expression<Func<SaudTbl, bool>> predicare = Saudatbl => (Saudatbl.Id == Global.SaudId && Saudatbl.DetId == Global.SaudDetId && Saudatbl.SaudaType == Global.SaudaType);
+            var ScannedData = (await _context.GetFileteredAsync(predicare)).ToList();        
+            var Obj = ScannedData.FirstOrDefault();
+
+            if(Obj != null)
+            {
+                SaudTbl SaudLst;
+                SaudLst = new SaudTbl();
+                SaudLst.Id = Obj.Id;
+                SaudLst.DetId = Obj.DetId;
+                SaudLst.SNo = Obj.SNo;
+                SaudLst.DoNo = Obj.DoNo;
+                SaudLst.SDate = Obj.SDate;
+                SaudLst.Scanned = str;
+                SaudLst.ItemName = Obj.ItemName;
+                SaudLst.ItemId = Obj.ItemId;
+                SaudLst.MergeNo = Obj.MergeNo;
+                SaudLst.MergeNoId = Obj.MergeNoId;
+                SaudLst.Grade = Obj.Grade;
+                SaudLst.GradeId = Obj.GradeId;
+                SaudLst.Plant = Obj.Plant;
+                SaudLst.PlantId = Obj.PlantId;
+                SaudLst.OrdQty = Obj.OrdQty;
+                SaudLst.DelQty = Obj.DelQty;
+                SaudLst.UOM = Obj.UOM;               
+                SaudLst.BalQty = Math.Round(NoOfTaka - DelTaka - ScanTaka - PrevTaka, 2);
+                SaudLst.Shade = Obj.Shade;
+                SaudLst.ShadeId = Obj.ShadeId;
+                SaudLst.ItemCode = Obj.ItemCode;
+                SaudLst.NetWt = Obj.NetWt;
+                SaudLst.Meters = Obj.Meters;
+                SaudLst.SaudaType = Global.SaudaType;
+                if(PrevQty  == 0)
+                {
+                    SaudLst.Exported = "";
+                }
+                else
+                {
+                    SaudLst.Exported = "Y";
+                }                
+                SaudLst.DevQty = Math.Round(SaudLst.OrdQty - DelTaka - SaudLst.BalQty, 2);
+                await _context.UpdateItemAsync<SaudTbl>(SaudLst);
+            }
+        }   
+        catch (Exception ex)
+        {
+            await sfDialogService.AlertAsync("UpdateSaudMst => " + ex.Message, CoreVars.ERROR);
+        }
+    }
+    private async void BalQtyFunc()
+    {
+        try
+        {
+            Expression<Func<SaudTbl, bool>> predicare2 = Saudatbl => (Saudatbl.Id == Global.SaudId && Saudatbl.DetId == Global.SaudDetId && Saudatbl.SaudaType == Global.SaudaType);
+            var ScannedSaudaData = (await _context.GetFileteredAsync(predicare2)).ToList();
+            var ObjScannedSaudaData = ScannedSaudaData.FirstOrDefault();
+
+            Expression<Func<ProductionTbl, bool>> predicare = Productiontbl => (Productiontbl.SadaId == Global.SaudId && Productiontbl.SadaDetId == Global.SaudDetId && Productiontbl.Exported != "Y" && Productiontbl.EntryNo == Global.EntryNo);
+            var ScannedData = (await _context.GetFileteredAsync(predicare)).ToList();    
+            if (aggregateValue != null)
+            {
+                ScanTaka = Convert.ToDouble(aggregateValue.FirstOrDefault(itm => itm.Key.Contains(LocalUOM)).Value);            
+            }
+
+            var ObjScannedData = ScannedData.FirstOrDefault();
+            if(ScannedData.Count != 0)
+            {
+                EntryNo = ObjScannedData.EntryNo;
+            }
+            else
+            {
+                EntryNo = Global.EntryNo;
+            }            
+
+            Expression<Func<ProductionTbl, bool>> predicare3 = Productiontbl => (Productiontbl.SadaId == Global.SaudId && Productiontbl.SadaDetId == Global.SaudDetId && Productiontbl.EntryNo != EntryNo && Productiontbl.Exported != "Y");
+            var CountScanTaka = (await _context.GetFileteredAsync(predicare3)).ToList();            
+            if(ObjScannedSaudaData.UOM == "MTR")
+            {
+                PrevTaka = CountScanTaka.Sum(Mtr => Mtr.Meters);
+            }
+            else if(ObjScannedSaudaData.UOM == "PCS")
+            {
+                PrevTaka = CountScanTaka.Sum(PCS => PCS.Pcs);
+            }
+            else
+            {
+                PrevTaka = CountScanTaka.Sum(Qty => Qty.NetWt);
+            }
+            balQty = Math.Round(NoOfTaka - DelTaka - ScanTaka - PrevTaka, 2);
+            StateHasChanged();
+        }   
+        catch (Exception ex)
+        {
+            await sfDialogService.AlertAsync("BalQtyFunc => " + ex.Message, CoreVars.ERROR);
+        }
+    }
+}

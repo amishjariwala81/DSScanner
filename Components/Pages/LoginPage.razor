@@ -1,0 +1,163 @@
+@page "/login"
+@inject NavigationManager navigationManager
+@inject SfDialogService sfDialogService
+@inject ILocalStorageService _localstorage
+@inject IJSRuntime jsRuntime
+
+
+@using Newtonsoft.Json
+@using Syncfusion.Blazor.Popups
+@using Syncfusion.Blazor.Grids
+@using JSCoreLibRazor
+@using System.IO;
+@using System.Threading.Tasks;
+@using System.Net.NetworkInformation
+@* @using Microsoft.Maui.Media;
+@using Microsoft.Maui.Storage; *@
+
+<div id="page" class="page">
+
+    <!-- Header : start -->
+    <header class="header">
+        <div class="site-brand">
+            <img src="/Images/logo.png" />
+        </div>
+
+        <div class="header-title">
+            <h1>DreamSmart - @Global.AppType </h1>
+        </div>
+
+        <div class="header-icons">
+            <a class="icon" href="#" data-bs-toggle="modal" data-bs-target="#exampleModal">
+                <img src="/Images/icon-header-support.svg" />
+            </a>
+            <a class="icon" href="#" data-bs-toggle="modal" data-bs-target="#exampleModalOne">
+                <img src="/Images/icon-header-exit.svg" />
+            </a>
+            @* <a class="icon" onclick="@TakePhoto">
+                <img src="/Images/icon-header-settings.svg" />
+            </a> *@
+        </div>
+    </header>
+    <!-- Header : end -->
+    <!-- Content : start -->
+    <section class="section content px-2">
+        @if (profiles.Contains(ConnectionProfile.WiFi))
+        {
+            <div style="background-color:lightgreen;height:18px;margin-top: -7px;">
+                <h6 style="text-align:right;color:black">WiFi Mode</h6>
+            </div>
+        }
+        else if (profiles.Contains(ConnectionProfile.Cellular))
+        {
+            <div style="background-color:lightgreen;height:18px;margin-top: -7px;">
+                <h6 style="text-align:right;color:black">Mobile Data Mode</h6>
+            </div>
+        }
+        else if (profiles.Contains(ConnectionProfile.Ethernet))
+        {
+            <div style="background-color:lightgreen;height:18px;margin-top: -7px;">
+                <h6 style="text-align:right;color:black">Ethernet Mode</h6>
+            </div>
+        }
+
+        <p style="text-align:left"><b>Hi, @CPersons </b></p>
+        <h2 class="page-title">Login</h2>
+
+        @* OnValidSubmit="@Validateuser" *@
+        <EditForm class="login-form d-flex flex-column" Model="@userDet" >
+            <div class="mb-3 text-center">
+                <label class="form-label">Please enter 4 digit Pin</label>
+                <input ref="myref" type="password" autofocus id="@LoginPin" class="form-control form-control-passcode"
+                @bind="userDet.PasswordVal" placeholder="----" maxlength="4" required style="font-weight:bold" pattern="[0-9]*" inputmode="numeric">
+            </div>
+            <button type="submit" class="btn btn-primary" @onclick="Validateuser">Login</button>
+        </EditForm>
+    </section>
+    <!-- Content : end -->
+    <!-- Modal1 : start -->
+        <HelpDesk></HelpDesk>
+    <!-- Modal1 : end -->
+    <!-- Modal2 : start -->
+        <ExitModal></ExitModal>
+    <!-- Modal2 : end -->
+</div>
+
+<style>
+    .e-dialog .e-dlg-header-content {
+        background-color: #00aeff
+    }
+
+    .e-dialog .e-dlg-header {
+        color: #fff
+    }
+
+        .e-dialog .e-dlg-header .e-btn-icon.e-icon-dlg-close {
+            color: #fff
+        }
+    /*
+        img {
+            display: block;
+            margin: 0 auto
+        } */
+</style>
+
+@code {
+    public static Login userDet = null;
+    public string LoginPin = "LoginPin";
+    public string Pin = string.Empty;
+    public string CPersons= string.Empty;
+    IEnumerable<ConnectionProfile> profiles = Connectivity.Current.ConnectionProfiles;
+
+    protected override async Task OnInitializedAsync()
+    {
+        GetName();
+        userDet = new Login();
+        // Test kptest = new Test();
+        // kptest.TestKP();
+        // //kptest.AlertBtn();
+        // //kptest.sf.AlertAsync("AAA","BBBB");
+        // string Tp = kptest.Tmp();
+       // await sfDialogService.AlertAsync(Tp, "TEST CLASS");
+    }
+
+    private async void GetName()
+    {
+        CPersons = await _localstorage.GetItemAsync<string>("CPerson");
+        StateHasChanged();
+    }
+
+    private async void Validateuser()
+    {
+        try
+        {            
+            Pin = await _localstorage.GetItemAsync<string>("Pin");
+            if (userDet.PasswordVal.Trim().Length == 4)
+            {
+                userDet.TblName = "DeviceRegister";
+                userDet.UserNameFld = "IMEINo";
+                userDet.PasswordFld = "Pin";
+                userDet.UserNameVal = Global.MobileNo;
+                userDet.PasswordVal = userDet.PasswordVal.Trim();
+                userDet.AppType = Global.AppType.ToString();
+
+                // string json = JsonConvert.SerializeObject(userDet);
+
+                if (userDet.PasswordVal == Pin)
+                {
+                    // UserActivityLog();
+                    navigationManager.NavigateTo("/dispatch");
+                }
+                else
+                {
+                    await sfDialogService.AlertAsync("Password is Incorrect.", CoreVars.APPMANAGER);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            await sfDialogService.AlertAsync("Validateuser => " + ex.Message, CoreVars.EXERROR);
+        }
+    }
+    
+}

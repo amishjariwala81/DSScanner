@@ -1,0 +1,96 @@
+@page "/profilepg"
+@inject NavigationManager Navmanage
+@inject ILocalStorageService _localstorage
+@using Syncfusion.Blazor.Inputs
+@using Syncfusion.Blazor.DropDowns
+@using Syncfusion.Blazor.Buttons
+@using Newtonsoft.Json
+@using Syncfusion.Blazor.Popups;
+@using JSCoreLibRazor
+<div id="page" class="page">
+
+    <!-- Header : start -->
+    <header class="header">
+        <div class="header-icons">
+            <a class="icon" onclick="@OnClickBack">
+                <img src="/Images/icon-header-back.svg">
+            </a>
+        </div>
+
+        <div class="header-title">
+            <h1>Profile</h1>
+        </div>
+
+        <div class="header-icons">
+           @*  <a class="icon" onclick="@OnClickHelp">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="rgba(255,255,255,1)"><path d="M12 22C6.47715 22 2 17.5228 2 12C2 6.47715 6.47715 2 12 2C17.5228 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22ZM12 20C16.4183 20 20 16.4183 20 12C20 7.58172 16.4183 4 12 4C7.58172 4 4 7.58172 4 12C4 16.4183 7.58172 20 12 20ZM11 15H13V17H11V15ZM13 13.3551V14H11V12.5C11 11.9477 11.4477 11.5 12 11.5C12.8284 11.5 13.5 10.8284 13.5 10C13.5 9.17157 12.8284 8.5 12 8.5C11.2723 8.5 10.6656 9.01823 10.5288 9.70577L8.56731 9.31346C8.88637 7.70919 10.302 6.5 12 6.5C13.933 6.5 15.5 8.067 15.5 10C15.5 11.5855 14.4457 12.9248 13 13.3551Z"></path></svg>
+            </a> *@
+            <a class="icon" href="#" data-bs-toggle="modal" data-bs-target="#exampleModal">
+                @* <img src="/Images/icon-header-support.svg" /> *@
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="rgba(255,255,255,1)"><path d="M22 17.0022C21.999 19.8731 19.9816 22.2726 17.2872 22.8616L16.6492 20.9476C17.8532 20.7511 18.8765 20.0171 19.4649 19H17C15.8954 19 15 18.1046 15 17V13C15 11.8954 15.8954 11 17 11H19.9381C19.446 7.05369 16.0796 4 12 4C7.92038 4 4.55399 7.05369 4.06189 11H7C8.10457 11 9 11.8954 9 13V17C9 18.1046 8.10457 19 7 19H4C2.89543 19 2 18.1046 2 17V12C2 6.47715 6.47715 2 12 2C17.5228 2 22 6.47715 22 12V12.9987V13V17V17.0013V17.0022ZM20 17V13H17V17H20ZM4 13V17H7V13H4Z"></path></svg>
+            </a>
+            <a class="icon" href="#" data-bs-toggle="modal" data-bs-target="#exampleModalOne">
+                @* <img src="/Images/icon-header-exit.svg" /> *@
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="rgba(255,255,255,1)"><path d="M6.26489 3.80698L7.41191 5.44558C5.34875 6.89247 4 9.28873 4 12C4 16.4183 7.58172 20 12 20C16.4183 20 20 16.4183 20 12C20 9.28873 18.6512 6.89247 16.5881 5.44558L17.7351 3.80698C20.3141 5.61559 22 8.61091 22 12C22 17.5228 17.5228 22 12 22C6.47715 22 2 17.5228 2 12C2 8.61091 3.68594 5.61559 6.26489 3.80698ZM11 12V2H13V12H11Z"></path></svg>
+            </a>
+        </div>
+    </header>
+    <!-- Header : end -->
+    <!-- Content : start -->
+    <section class="section content px-2">
+            <div class="mb-3">
+                <label class="form-label">Party</label>
+            <SfTextBox @bind-Value="@PName" class="form-control" Readonly></SfTextBox>
+        </div>
+            <div class="mb-3">
+                <label class="form-label">Contact person</label>
+                <SfTextBox @bind-Value="@CPersons" class="form-control" Readonly></SfTextBox>
+            </div>
+             <div class="mb-3">
+                 <label class="form-label">Mobile no.</label>
+                 <SfTextBox @bind-Value="Global.MobileNo" class="form-control" Readonly></SfTextBox>
+             </div>
+             <div class="mb-3">
+                 <label class="form-label">Version</label>
+            <SfTextBox @bind-Value="Global.AppVersion" class="form-control" Readonly></SfTextBox>
+             </div>
+             <div class="mb-3">
+                 <label class="form-label">EDate</label>
+                <SfTextBox @bind-Value="@EDate" class="form-control" Readonly></SfTextBox>
+             </div>
+    </section>
+    <!-- Content : end -->
+    <!-- Modal1 : start -->
+        <HelpDesk></HelpDesk>
+    <!-- Modal1 : end -->
+    <!-- Modal2 : start -->
+        <ExitModal></ExitModal>
+    <!-- Modal2 : end -->
+
+</div>
+@code {
+    string CPersons = string.Empty;
+    string PName = string.Empty;
+    string EDate = string.Empty;
+
+    protected override Task OnInitializedAsync()
+    {
+        GetName();
+        return base.OnInitializedAsync();
+    }
+    public void OnClickHelp()
+    {
+        Navmanage.NavigateTo("/helppage");
+    }
+    public void OnClickBack()
+    {
+        Navmanage.NavigateTo("/dispatch");
+    }
+    private async void GetName()
+    {
+        CPersons = await _localstorage.GetItemAsync<string>("CPerson");
+        PName = await _localstorage.GetItemAsync<string>("PName");
+        EDate = await _localstorage.GetItemAsync<string>("EDate");
+        StateHasChanged();
+    }
+}

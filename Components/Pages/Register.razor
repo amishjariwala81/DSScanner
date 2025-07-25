@@ -1,0 +1,371 @@
+﻿@page "/regUser"
+
+@using System.Linq;
+@inject NavigationManager Navmanage
+@inject SfDialogService DialogService
+@inject ILocalStorageService _localstorage
+
+@using Newtonsoft.Json
+@using Syncfusion.Blazor
+@using Syncfusion.Blazor.Popups
+@using Syncfusion.Blazor.Inputs
+@using Syncfusion.Blazor.DropDowns
+@using Syncfusion.Blazor.Calendars
+@using Syncfusion.Blazor.Buttons
+@using Syncfusion.Blazor.ProgressBar
+@using JSCoreLibRazor
+@using System.Data
+
+
+<div id="page" class="page">
+
+    <header class="header">
+        <div class="site-brand">
+            <img src="/Images/logo.png" />
+        </div>
+        <div class="header-title">
+            <h1>Device Registration</h1>
+        </div>
+        <div class="header-icons">
+            <a class="icon" href="#" data-bs-toggle="modal" data-bs-target="#exampleModal">
+                <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M27.1934 12.8609C25.7792 11.4377 23.9743 10.4664 22.0074 10.0701C20.0405 9.67392 18.0003 9.8706 16.1453 10.6353C14.2903 11.3999 12.7042 12.6981 11.5879 14.3653C10.4716 16.0325 9.87543 17.9936 9.875 20V25.25C9.875 25.9462 10.1516 26.6139 10.6438 27.1062C11.1361 27.5984 11.8038 27.875 12.5 27.875H14C14.6962 27.875 15.3639 27.5984 15.8562 27.1062C16.3484 26.6139 16.625 25.9462 16.625 25.25V21.5C16.625 20.8038 16.3484 20.1361 15.8562 19.6438C15.3639 19.1516 14.6962 18.875 14 18.875H12.2038C12.4753 17.0008 13.4126 15.2871 14.8443 14.0475C16.276 12.808 18.1063 12.1255 20 12.125H20.06C21.9453 12.1331 23.7647 12.8197 25.1853 14.0592C26.6059 15.2986 27.5327 17.0082 27.7963 18.875H26C25.3038 18.875 24.6361 19.1516 24.1438 19.6438C23.6516 20.1361 23.375 20.8038 23.375 21.5V25.25C23.375 25.9462 23.6516 26.6139 24.1438 27.1062C24.6361 27.5984 25.3038 27.875 26 27.875H27.8375C27.7511 28.2985 27.5209 28.6791 27.1861 28.9525C26.8512 29.2258 26.4322 29.3751 26 29.375H20.75C20.4516 29.375 20.1655 29.4935 19.9545 29.7045C19.7435 29.9155 19.625 30.2016 19.625 30.5C19.625 30.7984 19.7435 31.0845 19.9545 31.2955C20.1655 31.5065 20.4516 31.625 20.75 31.625H26C27.0936 31.6238 28.1421 31.1888 28.9154 30.4154C29.6888 29.6421 30.1238 28.5936 30.125 27.5V20C30.1302 18.6757 29.8739 17.3633 29.3708 16.1383C28.8677 14.9132 28.1278 13.7995 27.1934 12.8609ZM14 21.125C14.0995 21.125 14.1948 21.1645 14.2652 21.2348C14.3355 21.3052 14.375 21.4005 14.375 21.5V25.25C14.375 25.3495 14.3355 25.4448 14.2652 25.5152C14.1948 25.5855 14.0995 25.625 14 25.625H12.5C12.4005 25.625 12.3052 25.5855 12.2348 25.5152C12.1645 25.4448 12.125 25.3495 12.125 25.25V21.125H14ZM25.625 25.25V21.5C25.625 21.4005 25.6645 21.3052 25.7348 21.2348C25.8052 21.1645 25.9005 21.125 26 21.125H27.875V25.625H26C25.9005 25.625 25.8052 25.5855 25.7348 25.5152C25.6645 25.4448 25.625 25.3495 25.625 25.25Z" fill="white" /></svg>
+            </a>
+        </div>
+
+    </header>
+    <section class="section content px-2">
+        <div class="mb-3">
+            <SfTextBox Placeholder="Party Name" FloatLabelType="@FloatLabelType.Always" @bind-Value="PName" class="form-control" required Enabled="PtyName"></SfTextBox>
+        </div>
+        <div class="mb-3">
+            <SfTextBox Placeholder="Contact Person" FloatLabelType="@FloatLabelType.Always" @bind-Value="CPersons" class="form-control" Enabled="CNPerson"></SfTextBox>
+        </div>
+        <div class="mb-3">
+            <SfTextBox Placeholder="Mobile Number" FloatLabelType="@FloatLabelType.Always" maxlength="10" inputmode="numeric" class="form-control" @bind-Value="MobileNo" required Enabled="MobNo"></SfTextBox>
+        </div>
+        <div class="mb-3">
+            <SfTextBox Placeholder="Email" FloatLabelType="@FloatLabelType.Always" @bind-Value="Email_val" class="form-control"></SfTextBox>
+        </div>
+
+        <SfDialog Width="300px" ShowCloseIcon="false" @bind-Visible="@IsVisible">
+            <DialogTemplates>
+                <Header> @CoreVars.APPMANAGER </Header>
+                <Content>
+                    <p>Plese enter valid OTP received in Whatsapp linked with mobile no  @MobileNo  and continue.</p>
+                    <SfTextBox Placeholder="OTP:" FloatLabelType="@FloatLabelType.Always" @bind-Value="OTP_Val" maxlength="4"></SfTextBox>
+                    <div class="row" style="margin-top:15px;">
+                        @* <div class="col-sm-6">
+                            <a class="icon" href="#" style="color:blue;" onclick="@reset_time_fun">Resend OTP</a> 
+                        </div>
+                        <div class="col-sm-6">
+                            <b><p style="text-align:right">OTP Expire in @DispEleTime</p></b>
+                        </div>  *@
+                        <b><p style="text-align:right">OTP Expire in @DispEleTime</p></b>
+                    </div>
+                </Content>
+            </DialogTemplates>
+            <DialogAnimationSettings Effect="@AnimationEffect" Duration=400 />
+            <DialogButtons>
+                <DialogButton Content="Verify OTP and Register" IsPrimary="true" OnClick="@VerifyOTP" />
+                <DialogButton Content="Cancel" IsPrimary="false" OnClick="@CloseDialog" />
+            </DialogButtons>
+        </SfDialog>
+       @*  <SfDialog Width="300px" ShowCloseIcon="false" @bind-Visible="@IsVisible" >
+            <DialogTemplates>
+                <Header> Jupiter Manager </Header>
+                <Content> 
+                    <p>OTP is sent to the mobile no. entered in registration form.</p>
+                    <p>Plese enter valid OTP here and continue.</p>
+                    <SfTextBox Placeholder="OTP:" FloatLabelType="@FloatLabelType.Always" @bind-Value="OTP_Val"></SfTextBox>
+                    <div class="row" style="margin-top:15px;">
+                        <div class="col-sm-6">
+                            <a class="icon" href="#" style="color:blue;" onclick="@reset_time_fun">Resend OTP</a>
+                        </div>
+                        <div class="col-sm-6">
+                            <b><p style="text-align:right">@DispEleTime</p></b>
+                        </div>
+                    </div>
+                </Content>
+            </DialogTemplates>
+            <DialogAnimationSettings Effect="@AnimationEffect" Duration=400 />
+            <DialogButtons>
+                <DialogButton Content="Verify OTP and Register" IsPrimary="true" OnClick="@VerifyOTP" />
+                <DialogButton Content="Cancel" IsPrimary="false" OnClick="@CloseDialog" />
+            </DialogButtons>
+        </SfDialog> *@
+
+    </section>
+    <!-- Modal : start -->
+        <HelpDesk></HelpDesk>
+    <!-- Modal : end -->
+    <footer class="footer">
+        <div class="d-flex align-content-center justify-content-between flex-nowrap p-2 gap-2">
+            <button type="submit" class="btn btn-primary w-50" title="Validate mobile no. and register" @onclick="@regRequest">Register</button>
+            <button type="submit" class="btn btn-light w-50" title="Validate mobile no. and register" @onclick="@Global.ExitApp">Exit</button>
+        </div>
+    </footer>
+
+</div>
+<style>  
+    .e-dialog .e-dlg-header-content {
+        background-color: #00aeff
+    }
+    .e-dialog .e-dlg-header {
+        color: #fff
+    }
+    .e-dialog .e-dlg-header .e-btn-icon.e-icon-dlg-close {
+            color: #fff
+    }
+    
+</style>
+
+@code {
+    public string? PName { get; set; } 
+    public string? CPersons { get; set; }
+    public string? Email_val { get; set; }
+    public string? MobileNo { get; set; }
+    public string DispEleTime;
+    private bool IsVisible { get; set; }
+    private bool PtyName { get; set; } = true;
+    private bool CNPerson { get; set; } = true;
+    private bool MobNo { get; set; } = true;
+    private DialogEffect AnimationEffect = DialogEffect.Zoom;
+    GetTableData oTblData;
+    public DataTable? DataTbl = new DataTable();
+    
+    private void OpenDialog()
+    {
+        this.IsVisible = true;
+        PtyName = false;
+        CNPerson = false;
+        MobNo = false;
+        counter = 180;
+        StartTimer();
+        GenerateRandomNum();
+        SendSMS();
+
+    }
+    private void CloseDialog()
+    {
+        counter = 0;
+        OTP_Val = "";
+        this.IsVisible = false;
+    }
+    Dictionary<string, object> htmlattribute = new Dictionary<string, object>()
+    {
+           { "maxlength", "10" },
+    };
+
+    private static System.Timers.Timer aTimer;
+    public int counter = 60;
+    public string TextMsg = string.Empty;
+    public void StartTimer()
+    {
+        aTimer = new System.Timers.Timer(1000);
+        aTimer.Elapsed += CountDownTimer;
+        aTimer.Enabled = true;
+    }
+    public void CountDownTimer(Object source, System.Timers.ElapsedEventArgs e)
+    {
+        if (counter > 0)
+        {
+            counter -= 1;
+            TimeSpan EleTime = TimeSpan.FromSeconds(counter);
+            DispEleTime = string.Format("{1:D2}:{2:D2}", EleTime.Hours,
+            EleTime.Minutes,
+            EleTime.Seconds,
+            EleTime.Milliseconds);
+        }
+        else
+        {
+            aTimer.Enabled = false;
+            CloseDialog();
+
+        }
+        InvokeAsync(StateHasChanged);
+
+    }
+    public void reset_time_fun()
+    {
+        counter = 180;
+        GenerateRandomNum();
+    }
+    public string OTPCode = string.Empty;
+    public void GenerateRandomNum()
+    {
+        int randomDigits = 4; // Number of digits for the random number.
+        Random random = new Random();
+        OTPCode = random.Next(1000, 9999).ToString("D4");
+
+        // Ensure uniqueness by checking distinct digits.
+        while (randomDigits != OTPCode.ToString().ToArray().Distinct().Count())
+        {
+            OTPCode = random.Next(1000, 9999).ToString("D4");
+        }
+    }
+
+    public async void SendSMS()
+    {
+        TextMsg = OTPCode.ToString() + " is the OTP for your device registration process for Jupiter"+ Global.AppType+"."+ Environment.NewLine + " %0a" +
+        "Please do not share OTP to anyone." + Environment.NewLine + " %0a" + CoreVars.APPMANAGER;
+
+        string URL = "https://enotify.app/api/sendText?token=" + "64f72d93758e0a1ddfba152c" +
+                        "&phone=91" + MobileNo + "&message=" + TextMsg;
+
+        var serviceProvider = new ServiceCollection().AddHttpClient().BuildServiceProvider();
+        var httpClientFactory = serviceProvider.GetService<IHttpClientFactory>();
+        var httpClient = httpClientFactory.CreateClient();
+        var response = await httpClient.GetAsync(URL);
+        await Task.Delay(5000);
+
+    }
+
+    public string? OTP_Val { get; set; }
+    public void VerifyOTP()
+    {
+        OTPVald();
+    }
+    public async void OTPVald()
+    {
+        try
+        {
+            if (OTPCode == OTP_Val)
+            {
+
+                List<AllRowValue> allRowValues = new List<AllRowValue>();
+                List<RowValue> RowData = new List<RowValue>();
+
+                RowData.Add(new RowValue { FldName = "Party", FldValue = PName });
+                RowData.Add(new RowValue { FldName = "CPerson", FldValue = CPersons });
+                RowData.Add(new RowValue { FldName = "IMEINO", FldValue = MobileNo });
+                RowData.Add(new RowValue { FldName = "MobileNo", FldValue = MobileNo });
+                RowData.Add(new RowValue { FldName = "Email", FldValue =  (!string.IsNullOrEmpty(Email_val)?Email_val:"") });
+                RowData.Add(new RowValue { FldName = "AppType", FldValue = Global.AppType });
+                AllRowValue allRowValue = new AllRowValue
+                {
+                    AllRowValues = RowData
+                };
+                allRowValues.Add(allRowValue);
+
+                SaveDataObj saveDataObj = new SaveDataObj
+                {
+                    MstTblRowData = allRowValues,
+                    MstTable = "DeviceRegister",
+                    DelSaveWhrCondFldNm = "",
+                    DelSaveWhrCondFldVal = ""
+                };
+                string json = JsonConvert.SerializeObject(saveDataObj);
+                var response = await RazorFunc.CallAPIAsync(Global.APIURL, "RecDevRegnDet", json);
+                var respStatusCode = response.StatusCode;
+                               
+                if (respStatusCode.ToString() == "OK")
+                {
+                    var responseBody = await response.Content.ReadAsStringAsync();
+                    var retJSON = JsonConvert.DeserializeObject<RetJSON>(responseBody);
+
+                    if (retJSON.Status.ToString() == "Error")
+                    {
+                        await DialogService.AlertAsync(retJSON.Msg.ToString(), "OK");
+                    }
+                    else
+                    {
+                        // Global.CPerson = CPersons.Trim();
+                        string Msg = "Device Registration detail sent successfully." + Environment.NewLine + "Application will exit for now.";
+                        await DialogService.AlertAsync(Msg, CoreVars.APPDATAMANAGER);
+                        Global.MobileNo = MobileNo;
+                        await _localstorage.RemoveItemAsync(Global.AppType.ToString().Trim());
+                        await _localstorage.SetItemAsync(Global.AppType.ToString().Trim(), MobileNo);
+
+                        await Task.Delay(1000);
+                        TextMsg = "A new device registration request is received from " + CPersons.ToString().Trim() +
+                                   " with mobile no. " + MobileNo.ToString() + " for Jupiter "+ Global.AppType +"."+ Environment.NewLine + " %0a" + CoreVars.APPMANAGER;
+                        string URL = "https://enotify.app/api/sendText?token=" + "64f72d93758e0a1ddfba152c" +
+                                        "&phone=91" + Global.SYSAdminMob + "&message=" + TextMsg;
+
+                        var serviceProvider = new ServiceCollection().AddHttpClient().BuildServiceProvider();
+                        var httpClientFactory = serviceProvider.GetService<IHttpClientFactory>();
+                        var httpClient = httpClientFactory.CreateClient();
+
+                        response = await httpClient.GetAsync(URL);
+                        await Task.Delay(1000);
+
+                        Environment.Exit(0);
+                    }
+                }
+            }
+            else
+            {
+                await DialogService.AlertAsync("Please enter valid OTP received in your WhatsApp messenger.", CoreVars.APPDATAMANAGER);
+            }
+        }
+        catch(Exception ex)
+        {
+            await DialogService.AlertAsync("ShowDashBordData => " + ex.Message, CoreVars.EXERROR);
+        }
+    }
+
+    public async void regRequest()
+    {
+        try
+        {
+            if (!string.IsNullOrEmpty(MobileNo) && MobileNo.Trim().Length == 10 && PName.Trim().Length > 2 && CPersons.Trim().Length > 2)
+            {
+                oTblData = new GetTableData
+                {
+                    SelectClause = " IMEINO ",
+                    TableName = " DeviceRegister ",
+                    WhereCond = " where AppType = '" + Global.AppType + "' and IMEINO = '" + MobileNo + "'",
+                    SQLConnStr = Global.MainDBConnStr
+                };
+                string json = JsonConvert.SerializeObject(oTblData);
+                var response = await RazorFunc.CallAPIAsync(Global.APIURL, "GetTableData", json);
+                var respStatusCode = response.StatusCode;
+                if (respStatusCode.ToString() == "OK")
+                {
+                    var responseBody = await response.Content.ReadAsStringAsync();
+                    var retJSON = JsonConvert.DeserializeObject<RetJSON>(responseBody);
+                    if (retJSON.Status.ToString() == "Error")
+                    {
+                        await DialogService.AlertAsync(retJSON.Msg.ToString() + retJSON.ExError, CoreVars.EXERROR);
+                    }
+                    else
+                    {
+                        DataTbl = JsonConvert.DeserializeObject<DataTable>(retJSON.Data.ToString().Trim());
+                        if (DataTbl.Rows.Count > 0)
+                        {
+
+                            if (MobileNo.Trim() == "8780178336" || MobileNo.Trim() == "9998970699" || MobileNo.Trim() == "6355986155" || MobileNo.Trim() == "6352624213")
+                            {
+                                await _localstorage.RemoveItemAsync(Global.AppType.ToString().Trim());
+                                await _localstorage.SetItemAsync(Global.AppType.ToString().Trim(), MobileNo);
+                                await Task.Delay(1000);
+                                Navmanage.NavigateTo("/");
+                            }
+                            else
+                            {
+                                string Msg = "This mobileno is already registered. Please contact system admin to unregister it, then retry." + '\n' + "Application will exit for now.";
+                                await DialogService.AlertAsync(Msg, CoreVars.APPMANAGER);
+                                Environment.Exit(0);
+                            }
+                        }
+                        else
+                        {
+                            OpenDialog();
+                        }
+                    }
+                }
+            }
+            else
+            {
+                await DialogService.AlertAsync("Please enter valid data.", CoreVars.ERROR);
+            }
+        }
+        catch (Exception ex)
+        {
+            await DialogService.AlertAsync("regRequest => " + ex.Message, CoreVars.EXERROR);
+        }        
+        await _localstorage.SetItemAsync("CPerson", CPersons.Trim());
+        await _localstorage.SetItemAsync("PName", PName.Trim());
+        await _localstorage.SetItemAsync("Pin", "9999");
+    }
+}

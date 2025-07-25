@@ -1,0 +1,384 @@
+﻿@page "/chlndet"
+
+@inject SfDialogService sfDialogService
+@inject NavigationManager Navmanage
+@inject HttpClient Http
+
+@using Newtonsoft.Json
+@using Syncfusion.Blazor.Popups
+@using System.Data
+@using JSCoreLibRazor
+@using SQLite
+@using Syncfusion.Blazor
+@using Syncfusion.Blazor.Lists
+@using System.Linq.Expressions
+@using Syncfusion.Blazor.Spinner
+@using System.Net.Http.Json;
+@using System.Net;
+@using Microsoft.Maui.Media;
+@using Microsoft.Maui.Storage;
+@using System.IO;
+@using System.Threading.Tasks;
+@using DSScanner.Data
+@using System.Reflection
+@using System.Dynamic;
+@using System.Linq;
+
+<div id="page" class="page">
+    <header class="header">
+
+        <div class="site-brand">
+            <img src="/Images/logo.png" />
+        </div>
+        <div class="header-title">
+            <h1>Challan Details</h1>
+        </div>
+         <div class="header-icons">
+            <a class="icon" onclick="@AddEntry">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="rgba(255,255,255,1)"><path d="M15 4H5V20H19V8H15V4ZM3 2.9918C3 2.44405 3.44749 2 3.9985 2H16L20.9997 7L21 20.9925C21 21.5489 20.5551 22 20.0066 22H3.9934C3.44476 22 3 21.5447 3 21.0082V2.9918ZM11 11V8H13V11H16V13H13V16H11V13H8V11H11Z"></path></svg>
+            </a>
+            <a class="icon" onclick="@EditEntry">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="rgba(255,255,255,1)"><path d="M15.7279 9.57627L14.3137 8.16206L5 17.4758V18.89H6.41421L15.7279 9.57627ZM17.1421 8.16206L18.5563 6.74785L17.1421 5.33363L15.7279 6.74785L17.1421 8.16206ZM7.24264 20.89H3V16.6473L16.435 3.21231C16.8256 2.82179 17.4587 2.82179 17.8492 3.21231L20.6777 6.04074C21.0682 6.43126 21.0682 7.06443 20.6777 7.45495L7.24264 20.89Z"></path></svg>
+            </a>
+            <a class="icon" onclick="@DeleteEntry">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="rgba(255,255,255,1)"><path d="M17 6H22V8H20V21C20 21.5523 19.5523 22 19 22H5C4.44772 22 4 21.5523 4 21V8H2V6H7V3C7 2.44772 7.44772 2 8 2H16C16.5523 2 17 2.44772 17 3V6ZM18 8H6V20H18V8ZM9 11H11V17H9V11ZM13 11H15V17H13V11ZM9 4V6H15V4H9Z"></path></svg>
+            </a>
+         </div>
+    </header>
+
+    <section class="section content px-2">                
+        <SfGrid class="tab-grid-min-height" @ref="ChlnDetGrid" DataSource="@ChlnDataSource" GridLines="GridLine.Both" RowHeight="@CoreVars.ROWHEIGHT" AllowResizing="true" EnableAutoFill="true">
+            <GridSelectionSettings EnableToggle="false"></GridSelectionSettings>
+            <GridEvents RowSelected="RowSelectHandler" TValue="ExpandoObject"></GridEvents>
+            <GridEditSettings AllowAdding="false" AllowDeleting="true" AllowEditing="false"></GridEditSettings>
+            <GridColumns>
+                @foreach (var stru in ChlnDataTbl.Columns)
+                {
+                    var field = stru.ToString();
+                    var header = GetHeaderText(field);
+                    bool hidden = IsHidden(field);
+                    bool primaryKey = IsPrimaryKey(field);
+                    <GridColumn Field=@field
+                    HeaderText=@header
+                    TextAlign="TextAlign.Left"
+                    AutoFit="true"
+                    AllowResizing="true"
+                    Visible=@(!primaryKey ? !hidden : false)
+                    IsPrimaryKey=@primaryKey />
+                }
+            </GridColumns>
+        </SfGrid>
+    </section>
+
+    <footer class="footer">
+        <div class="d-flex align-content-center justify-content-between flex-nowrap p-2 gap-2">            
+            <button class="btn btn-primary w-100" title="back" @onclick="Cancel">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="rgba(255,255,255,1)"><path d="M11.9997 10.5865L16.9495 5.63672L18.3637 7.05093L13.4139 12.0007L18.3637 16.9504L16.9495 18.3646L11.9997 13.4149L7.04996 18.3646L5.63574 16.9504L10.5855 12.0007L5.63574 7.05093L7.04996 5.63672L11.9997 10.5865Z"></path></svg>
+            </button>            
+        </div>
+    </footer>
+</div>    
+
+<style>
+    .e-dialog .e-dlg-header-content {
+        background-color: #00aeff
+    }
+
+    .e-dialog .e-dlg-header {
+        color: #fff
+    }
+
+    .e-dialog .e-dlg-header .e-btn-icon.e-icon-dlg-close {
+        color: #fff
+    }
+
+    .e-btn-icon.e-icons.e-close-icon.e-icon-left:before {
+        content: '\e825';
+    }
+</style>
+
+@code {
+    private SfGrid<System.Dynamic.ExpandoObject> ChlnDetGrid { get; set; }
+    private List<System.Dynamic.ExpandoObject>? ChlnDataSource = new List<System.Dynamic.ExpandoObject>();
+    private DataTable? ChlnDataTbl = new DataTable();    
+    private readonly DatabaseContext _context = new DatabaseContext();
+    private string EntryNo = string.Empty;
+
+    private readonly HashSet<string> hiddenFields = new()
+    {
+        "ItemId", "MergeNoId", "GradeId", "Scanned", "ShadeId", "PlantId",
+        "SadaId", "CrtnSold", "Exported", "PDate", "TakaNo", "SadaDetId", "EntSr", "NetWt",
+        "Meters", "SrNo", "SadaDetId", "Pcs", "EntSr"
+    };
+
+    private string GetHeaderText(string field) => field switch
+    {     
+        "EntryNo" => "EntNo",        
+        _ => field
+    };
+
+    private bool IsHidden(string field) => hiddenFields.Contains(field) || field == "Id";
+
+    private bool IsPrimaryKey(string field) => field == "Id";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Task.Delay(200);        
+        DisplayData();
+
+    }
+
+    private async void EditEntry()
+    {
+        bool RecSel = await IsRecordSelected(ChlnDetGrid);
+        if (RecSel)
+        {            
+            Global.EntryNo = EntryNo;
+            Navmanage.NavigateTo("/scandet");
+        }
+    }
+
+    private async Task<bool> IsRecordSelected(SfGrid<System.Dynamic.ExpandoObject> DefaultGrid) // to be added in library
+    {
+        bool Retval = true;
+        try
+        {
+            var getSelected = await DefaultGrid.GetSelectedRowIndexesAsync();
+            if (getSelected.Count <= 0)
+            {
+                Retval = false;
+                await sfDialogService.AlertAsync("Please select line item to make any data operation.", CoreVars.APPDATAMANAGER);
+            }
+        }
+        catch (Exception ex)
+        {
+            await sfDialogService.AlertAsync("IsRecordSelected => " + ex.Message, CoreVars.EXERROR);
+        }
+        return Retval;
+    }
+
+    private async void DeleteEntry()
+    {      
+        try
+        {
+            bool RecSel = await IsRecordSelected(ChlnDetGrid);
+            if (RecSel)
+            {
+                int Id = int.Parse(selRec["SadaId"].ToString().Trim());
+                string EntNo = selRec["EntryNo"].ToString().Trim();
+                bool isConfirm = await sfDialogService.ConfirmAsync("Are you sure to delete Challan No. " + EntNo + " ?" , CoreVars.APPMANAGER);
+                if (isConfirm)
+                {                    
+                    Expression<Func<ProductionTbl, bool>> predicare = Productiontbl => (Productiontbl.SadaId == Id && Productiontbl.Exported != "Y" && Productiontbl.EntryNo == EntryNo);
+                    var Scanntaka = (await _context.GetFileteredAsync(predicare)).ToList();
+                    foreach (var data in Scanntaka)
+                    {
+                        ProductionTbl ProdLst;
+                        ProdLst = new ProductionTbl();
+                        ProdLst.Id = data.Id;
+                        ProdLst.SrNo = data.SrNo;
+                        ProdLst.SadaId = 0;
+                        ProdLst.SadaDetId = 0;
+                        ProdLst.PDate = data.PDate;
+                        ProdLst.TakaNo = data.TakaNo;
+                        ProdLst.ItemName = data.ItemName;
+                        ProdLst.ItemId = data.ItemId;
+                        ProdLst.MergeNo = data.MergeNo;
+                        ProdLst.MergeNoId = data.MergeNoId;
+                        ProdLst.Grade = data.Grade;
+                        ProdLst.GradeId = data.GradeId;
+                        ProdLst.NetWt = data.NetWt;
+                        ProdLst.Meters = data.Meters;
+                        ProdLst.Shade = data.Shade;
+                        ProdLst.ShadeId = data.ShadeId;
+                        ProdLst.Plant = data.Plant;
+                        ProdLst.PlantId = data.PlantId;
+                        ProdLst.EntryNo = string.Empty;
+                        await _context.UpdateItemAsync<ProductionTbl>(ProdLst);
+                    }
+                    UpdateSaudMst("Y");
+                    if (ChlnDataSource.Count() == 1 || ChlnDataSource.Count() == 0)
+                    {
+                        UpdateSaudMst("");
+                    }
+                    DisplayData();
+                    await sfDialogService.AlertAsync("Data Deleted Successfullly.", CoreVars.EXERROR);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            await sfDialogService.AlertAsync("DeleteEntry => " + ex.Message, CoreVars.EXERROR);
+        }
+    }
+    private async void UpdateSaudMst(string str)
+    {
+        try
+        {
+            Expression<Func<ProductionTbl, bool>> predicare4 = Productiontbl => (Productiontbl.SadaId == Global.SaudId && Productiontbl.SadaDetId == Global.SaudDetId && Productiontbl.Exported != "Y" && Productiontbl.EntryNo == Global.EntryNo);
+            var ScannedTaka = (await _context.GetFileteredAsync(predicare4)).ToList();
+            double ScanTaka = ScannedTaka.Count();
+
+            Expression<Func<ProductionTbl, bool>> predicare = Productiontbl => (Productiontbl.SadaId == Global.SaudId && Productiontbl.SadaDetId == Global.SaudDetId && Productiontbl.Exported != "Y");
+            var CountTaka = (await _context.GetFileteredAsync(predicare)).ToList();
+            double BalTaka = CountTaka.Count();
+            double PrevTaka = BalTaka - ScanTaka;
+
+            Expression<Func<SaudTbl, bool>> predicare2 = SaudaTbl => (SaudaTbl.Id == Global.SaudId && SaudaTbl.DetId == Global.SaudDetId && SaudaTbl.SaudaType == Global.SaudaType);
+            var ScannedData = (await _context.GetFileteredAsync(predicare2)).ToList();
+
+            Expression<Func<ProductionTbl, bool>> predicare3 = Productiontbl => (Productiontbl.SadaId == Global.SaudId && Productiontbl.SadaDetId == Global.SaudDetId && Productiontbl.Exported == "Y");
+            var PreQty = (await _context.GetFileteredAsync(predicare3)).ToList();
+            int PrevQty = PreQty.Count();
+
+            foreach (var data in ScannedData)
+            {
+                SaudTbl SaudLst;
+                SaudLst = new SaudTbl();
+                SaudLst.Id = data.Id;
+                SaudLst.DetId = data.DetId;
+                SaudLst.SNo = data.SNo;
+                SaudLst.DoNo = data.DoNo;
+                SaudLst.SDate = data.SDate;
+                SaudLst.Scanned = str;
+                SaudLst.ItemName = data.ItemName;
+                SaudLst.ItemId = data.ItemId;
+                SaudLst.MergeNo = data.MergeNo;
+                SaudLst.MergeNoId = data.MergeNoId;
+                SaudLst.Grade = data.Grade;
+                SaudLst.GradeId = data.GradeId;
+                SaudLst.Plant = data.Plant;
+                SaudLst.PlantId = data.PlantId;
+                SaudLst.DelQty = data.DelQty;
+                SaudLst.OrdQty = data.OrdQty;
+                SaudLst.UOM = data.UOM;                
+                SaudLst.BalQty = Math.Round(data.OrdQty - data.DelQty - ScanTaka - PrevTaka, 2);
+                SaudLst.Shade = data.Shade;
+                SaudLst.Meters = data.Meters;
+                SaudLst.NetWt = data.NetWt;
+                SaudLst.ItemCode = data.ItemCode;
+                SaudLst.ShadeId = data.ShadeId;
+                SaudLst.SaudaType = Global.SaudaType;
+                if (PrevQty == 0)
+                {
+                    SaudLst.Exported = "";
+                }
+                else
+                {
+                    SaudLst.Exported = "Y";
+                }
+                SaudLst.DevQty = Math.Round(SaudLst.OrdQty - SaudLst.DelQty - SaudLst.BalQty, 2);
+                await _context.UpdateItemAsync<SaudTbl>(SaudLst);
+            }
+        }
+        catch (Exception ex)
+        {
+            await sfDialogService.AlertAsync("UpdateSaudMst => " + ex.Message, CoreVars.EXERROR);
+        }
+    }
+
+    IDictionary<string, object>? selRec;
+    private void RowSelectHandler(RowSelectEventArgs<ExpandoObject> args)
+    {
+        selRec = args.Data as IDictionary<string, object>;
+        EntryNo = selRec["EntryNo"].ToString().Trim();
+    }
+
+    private async void AddEntry()
+        {
+        try
+        {
+            Expression<Func<SaudTbl, bool>> predicare = SaudaTbl => (SaudaTbl.Id == Global.SaudId && SaudaTbl.DetId == Global.SaudDetId && SaudaTbl.SaudaType == Global.SaudaType);
+            var Scanntaka = (await _context.GetFileteredAsync(predicare)).ToList();
+            var GetScanData = Scanntaka.FirstOrDefault();
+            if (GetScanData.BalQty != 0)
+            {
+                Expression<Func<SaudTbl, bool>> predicare2 = SaudaTbl => (SaudaTbl.Id == Global.SaudId && SaudaTbl.DetId == Global.SaudDetId && SaudaTbl.SaudaType == Global.SaudaType);
+                var SaudaData = (await _context.GetFileteredAsync(predicare2)).ToList();
+                var GetSaudaNo = SaudaData.FirstOrDefault();
+
+                Expression<Func<ProductionTbl, bool>> predicare3 = Productiontbl => (Productiontbl.SadaId == Global.SaudId && Productiontbl.SadaDetId == Global.SaudDetId);
+                var CheckEnt = (await _context.GetFileteredAsync(predicare3)).OrderByDescending(p => p.EntSr).ToList();
+                var GetEntryNo = CheckEnt.FirstOrDefault();
+
+                if(CheckEnt.Count == 0)
+                {
+                    Global.EntryNo = GetSaudaNo.SNo + "/1";
+                }
+                else
+                {
+                    string [] str   = GetEntryNo.EntryNo.Split('/');
+                    int ictr = int.Parse(str[1]) + 1;
+                    Global.EntryNo = GetSaudaNo.SNo + "/" + ictr;
+                }
+                Navmanage.NavigateTo("/scandet");
+            }
+            else
+            {
+                await sfDialogService.AlertAsync("You can't add the challan becase baltaka is zero", CoreVars.APPMANAGER);
+            }
+        }
+        catch (Exception ex)
+        {
+            await sfDialogService.AlertAsync("AddEntry => " + ex.Message, CoreVars.EXERROR);
+        }
+    }
+   
+    private async void DisplayData()
+    {
+        try
+        {
+            Expression<Func<ProductionTbl, bool>> predicare = Productiontbl => (Productiontbl.SadaId == Global.SaudId && Productiontbl.SadaDetId == Global.SaudDetId && Productiontbl.Exported != "Y");
+            var ScannedData = (await _context.GetFileteredAsync(predicare)).ToList();
+            var ScanDistData = ScannedData.DistinctBy(p => p.EntryNo).OrderBy(p=>p.EntSr).ToList();
+            ChlnDataTbl = ListToDataTable(ScanDistData);
+            ChlnDataSource = new List<System.Dynamic.ExpandoObject>();            
+            if (ChlnDataTbl.Rows.Count > 0)
+            {
+                foreach (DataRow row in ChlnDataTbl.Rows)
+                {
+                    dynamic e = new ExpandoObject();
+                    foreach (DataColumn col in ChlnDataTbl.Columns)
+                    {                        
+                        ((IDictionary<string, object>)e).Add(col.ColumnName, row.ItemArray[col.Ordinal]);
+                    }
+                    ChlnDataSource.Add(e);
+                }
+            }
+            else
+            {
+                await sfDialogService.AlertAsync("No challans found.", CoreVars.APPMANAGER);
+            }
+            await ChlnDetGrid.Refresh();
+        }
+        catch (Exception ex)
+        {
+            await sfDialogService.AlertAsync(ex.Message, CoreVars.EXERROR);
+        }        
+        StateHasChanged();
+    }
+
+    private DataTable ListToDataTable<T>(List<T> items)
+    {
+        DataTable dataTable = new DataTable(typeof(T).Name);
+        PropertyInfo[] Props = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance);
+        foreach (PropertyInfo prop in Props)
+        {
+            dataTable.Columns.Add(prop.Name);
+        }
+        foreach (T item in items)
+        {
+            var values = new object[Props.Length];
+            for (int i = 0; i < Props.Length; i++)
+            {
+                values[i] = Props[i].GetValue(item, null);
+            }
+            dataTable.Rows.Add(values);
+        }
+        return dataTable;
+    }
+    private async void Cancel()
+    {
+        Navmanage.NavigateTo("/dispatch");
+    }    
+}

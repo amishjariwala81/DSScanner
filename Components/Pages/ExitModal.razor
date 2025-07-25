@@ -1,0 +1,37 @@
+@page "/exitmodalview"
+
+@inject NavigationManager navigationManager
+@inject SfDialogService sfDialogService
+@inject IJSRuntime jsRuntime
+
+@using Newtonsoft.Json
+@using Syncfusion.Blazor.Popups
+@using Syncfusion.Blazor.Grids
+@using JSCoreLibRazor
+
+<!-- Modal2 : start -->
+    <div class="modal fade" id="exampleModalOne" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-body text-center py-4">
+                    <h5>Are you sure?</h5>
+                    <p>Logout and Exit from the app.</p>
+                </div>
+                <div class="modal-footer d-flex align-content-center justify-content-between flex-nowrap">
+                    <button type="button" class="btn btn-light w-50" data-bs-dismiss="modal">No</button>
+                    <button type="button" class="btn btn-primary w-50" onclick="@Global.ExitApp">Exit</button>
+                </div>
+            </div>
+        </div>
+    </div>
+<!-- Modal2 : end -->
+
+@code {
+
+    
+    protected override async Task OnInitializedAsync()
+    {
+       
+    }
+    
+}

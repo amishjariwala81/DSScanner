@@ -1,0 +1,1469 @@
+﻿@page "/dispatch"
+
+@inject SfDialogService sfDialogService
+@inject NavigationManager Navmanage
+@inject HttpClient Http
+@inject ILocalStorageService _localstorage
+
+@using Newtonsoft.Json
+@using Syncfusion.Blazor.Popups
+@using System.Data
+@using JSCoreLibRazor
+@using SQLite
+@using Syncfusion.Blazor
+@using Syncfusion.Blazor.Lists
+@using System.Linq.Expressions
+@using Syncfusion.Blazor.Spinner
+@using System.Net.Http.Json;
+@using System.Net;
+@using Syncfusion.Blazor.DropDowns
+@using System.Reflection
+@using System.Dynamic;
+@using Microsoft.Maui.Media;
+@using Microsoft.Maui.Storage;
+@using System.IO;
+@using System.Threading.Tasks;
+@using DSScanner.Data;
+
+<div id="page" class="page">
+    <header class="header">
+
+        <div class="site-brand">
+            <img src="/Images/logo.png" />
+        </div>
+        <div class="header-title">
+            <h1>Sales Order</h1>
+        </div>   
+        
+        <div class="header-icons">
+            <a class="icon" href="#" data-bs-toggle="modal" data-bs-target="#exampleModal">
+                <img src="/Images/icon-header-support.svg" />
+            </a>
+
+
+            <a class="icon" href="#" data-bs-toggle="modal" data-bs-target="#exampleModalOne">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="rgba(255,255,255,1)"><path d="M6.26489 3.80698L7.41191 5.44558C5.34875 6.89247 4 9.28873 4 12C4 16.4183 7.58172 20 12 20C16.4183 20 20 16.4183 20 12C20 9.28873 18.6512 6.89247 16.5881 5.44558L17.7351 3.80698C20.3141 5.61559 22 8.61091 22 12C22 17.5228 17.5228 22 12 22C6.47715 22 2 17.5228 2 12C2 8.61091 3.68594 5.61559 6.26489 3.80698ZM11 12V2H13V12H11Z"></path></svg>
+            </a>
+
+            <a class="icon" onclick="@OpenSearchDialog">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="rgba(255,255,255,1)"><path d="M18.031 16.6168L22.3137 20.8995L20.8995 22.3137L16.6168 18.031C15.0769 19.263 13.124 20 11 20C6.032 20 2 15.968 2 11C2 6.032 6.032 2 11 2C15.968 2 20 6.032 20 11C20 13.124 19.263 15.0769 18.031 16.6168ZM16.0247 15.8748C17.2475 14.6146 18 12.8956 18 11C18 7.1325 14.8675 4 11 4C7.1325 4 4 7.1325 4 11C4 14.8675 7.1325 18 11 18C12.8956 18 14.6146 17.2475 15.8748 16.0247L16.0247 15.8748Z"></path></svg>
+            </a>
+
+            <div class="dropdown">
+                <a class="icon" data-bs-toggle="dropdown" aria-expanded="false">
+                    @* <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="rgba(255,255,255,1)"><path d="M3 4H21V6H3V4ZM3 11H21V13H3V11ZM3 18H21V20H3V18Z"></path></svg> *@
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="rgba(255,255,255,1)"><path d="M12 3C10.9 3 10 3.9 10 5C10 6.1 10.9 7 12 7C13.1 7 14 6.1 14 5C14 3.9 13.1 3 12 3ZM12 17C10.9 17 10 17.9 10 19C10 20.1 10.9 21 12 21C13.1 21 14 20.1 14 19C14 17.9 13.1 17 12 17ZM12 10C10.9 10 10 10.9 10 12C10 13.1 10.9 14 12 14C13.1 14 14 13.1 14 12C14 10.9 13.1 10 12 10Z"></path></svg>
+                </a>
+                <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1">
+
+                    <li>
+                        <button class="dropdown-item" onclick="@Importdata">                            
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" width="20" height="20" fill="currentColor"><path d="M3 19H21V21H3V19ZM13 13.1716L19.0711 7.1005L20.4853 8.51472L12 17L3.51472 8.51472L4.92893 7.1005L11 13.1716V2H13V13.1716Z" fill="#14132B"></path></svg>
+                            <span style="margin-left: 10px;">Import Data</span>
+                        </button>
+                    </li>
+                    <li>
+                        <button class="dropdown-item" onclick="@ExportData">                            
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" width="20" height="20" fill="currentColor"><path d="M3 19H21V21H3V19ZM13 5.82843V17H11V5.82843L4.92893 11.8995L3.51472 10.4853L12 2L20.4853 10.4853L19.0711 11.8995L13 5.82843Z"></path></svg>
+                            <span style="margin-left: 10px;">Export Data</span>
+                        </button>
+                    </li>
+
+                    <li>
+                        <button class="dropdown-item" onclick="@ResetData">                            
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="20" fill="rgba(0,0,0,1)"><path d="M7 4V2H17V4H22V6H20V21C20 21.5523 19.5523 22 19 22H5C4.44772 22 4 21.5523 4 21V6H2V4H7ZM6 6V20H18V6H6ZM9 9H11V17H9V9ZM13 9H15V17H13V9Z"></path></svg>
+                            <span style="margin-left: 10px;">Reset</span>
+                        </button>
+                    </li>
+
+                    <li>
+                        <button class="dropdown-item" onclick="@OpenProfilePage">                            
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="20" fill="rgba(0,0,0,1)"><path d="M21.0082 3C21.556 3 22 3.44495 22 3.9934V20.0066C22 20.5552 21.5447 21 21.0082 21H2.9918C2.44405 21 2 20.5551 2 20.0066V3.9934C2 3.44476 2.45531 3 2.9918 3H21.0082ZM20 5H4V19H20V5ZM18 15V17H6V15H18ZM12 7V13H6V7H12ZM18 11V13H14V11H18ZM10 9H8V11H10V9ZM18 7V9H14V7H18Z"></path></svg>
+                            <span style="margin-left: 10px;">Profile</span>
+                        </button>
+                    </li>
+                    <li>
+                        <button class="dropdown-item" onclick=@(() => SetItemType("GREY"))>
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" width="20" height="24" fill="rgba(0,0,0,1)"><path d="M14 1.5V22H12V3.704L7.5 4.91V2.839L12.5 1.5H14Z"></path></svg>                           
+                            <span style="margin-left: 10px;">Grey</span>
+                        </button>
+                    </li>
+                    <li>
+                        <button class="dropdown-item" onclick=@(() => SetItemType("YARN"))>                            
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" width="20" height="24" fill="rgba(0,0,0,1)"><path d="M16.0002 7.5C16.0002 5.29086 14.2094 3.5 12.0002 3.5C9.7911 3.5 8.00024 5.29086 8.00024 7.5H6.00024C6.00024 4.18629 8.68653 1.5 12.0002 1.5C15.314 1.5 18.0002 4.18629 18.0002 7.5C18.0002 8.93092 17.4993 10.2448 16.6633 11.276L9.344 19.9991L18.0002 20V22H6.00024L6 20.8731L15.0642 10.071C15.6485 9.37595 16.0002 8.47905 16.0002 7.5Z"></path></svg>
+                            <span style="margin-left: 10px;">Yarn</span>
+                        </button>
+                    </li>
+                </ul>
+            </div>            
+                
+            <SfDialog ShowCloseIcon="true" CloseOnEscape="true" @ref="SearchDialogRef" Visible=false>                
+                <DialogTemplates>
+                    <Header>Search Descr...</Header>
+                    <Content>
+                        <div class="display-inline-btns">
+                            <SfTextBox Placeholder="Search Descr..." class="e-control e-textbox e-lib e-input" ShowClearButton="true" @bind-Value="SearchTakaNo"></SfTextBox>
+                            <SfButton CssClass="e-primary e-flat" @onclick="@FindTaka">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="rgba(0,0,0,1)"><path d="M18.031 16.6168L22.3137 20.8995L20.8995 22.3137L16.6168 18.031C15.0769 19.263 13.124 20 11 20C6.032 20 2 15.968 2 11C2 6.032 6.032 2 11 2C15.968 2 20 6.032 20 11C20 13.124 19.263 15.0769 18.031 16.6168ZM16.0247 15.8748C17.2475 14.6146 18 12.8956 18 11C18 7.1325 14.8675 4 11 4C7.1325 4 4 7.1325 4 11C4 14.8675 7.1325 18 11 18C12.8956 18 14.6146 17.2475 15.8748 16.0247L16.0247 15.8748Z"></path></svg>
+                            </SfButton>
+                        </div>
+                        <table class="Table" style="margin-top:20px">
+                            <tbody>
+                                <tr>
+                                    <td>SrNo:</td>
+                                    <td>
+                                        <span class="e-input-group">
+                                            <input type="text" id="srno" readonly class="e-input" value="@ProdSrNo">
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>PDate:</td>
+                                    <td>
+                                        <span class="e-input-group">
+                                            <input type="text" id="srno" readonly class="e-input" value="@ProdPDate">
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>ItemName:</td>
+                                    <td>
+                                        <span class="e-input-group">
+                                            <input type="text" id="IMEINo" readonly class="e-input" value="@ProdItemName">
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>MergeNo:</td>
+                                    <td>
+                                        <span class="e-input-group">
+                                            <input type="text" id="IMEINo" readonly class="e-input" value="@ProdMergeNo">
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Grade:</td>
+                                    <td>
+                                        <span class="e-input-group">
+                                            <input type="text" id="IMEINo" readonly class="e-input" value="@ProdGrade">
+                                        </span>
+                                    </td>
+                                </tr> 
+                                <tr>
+                                    <td>Shade:</td>
+                                    <td>
+                                        <span class="e-input-group">
+                                            <input type="text" id="IMEINo" readonly class="e-input" value="@ProdShade">
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>NetWt:</td>
+                                    <td>
+                                        <span class="e-input-group">
+                                            <input type="text" id="IMEINo" readonly class="e-input" value="@ProdNetWt">
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Meters:</td>
+                                    <td>
+                                        <span class="e-input-group">
+                                            <input type="text" id="IMEINo" readonly class="e-input" value="@ProdMeters">
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Plant:</td>
+                                    <td>
+                                        <span class="e-input-group">
+                                            <input type="text" id="IMEINo" readonly class="e-input" value="@ProdPlant">
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Status:</td>
+                                    <td>
+                                        <span class="e-input-group">
+                                            <input type="text" id="IMEINo" readonly class="e-input" value="@ProdStatus">
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>InvNo:</td>
+                                    <td>
+                                        <span class="e-input-group">
+                                            <input type="text" id="IMEINo" readonly class="e-input" value="@ProdInvNo">
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>InvDate:</td>
+                                    <td>
+                                        <span class="e-input-group">
+                                            <input type="text" id="IMEINo" readonly class="e-input" value="@ProdInvDate">
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Scanned in SaudaNo:</td>
+                                    <td>
+                                        <span class="e-input-group">
+                                            <input type="text" id="IMEINo" readonly class="e-input" value="@ProdSaudaNo">
+                                        </span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </Content>
+                    <FooterTemplate>
+                        <SfButton CssClass="e-primary e-flat" @onclick="@CloseSearchDialog">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="rgba(255,255,255,1)"><path d="M11.9997 10.5865L16.9495 5.63672L18.3637 7.05093L13.4139 12.0007L18.3637 16.9504L16.9495 18.3646L11.9997 13.4149L7.04996 18.3646L5.63574 16.9504L10.5855 12.0007L5.63574 7.05093L7.04996 5.63672L11.9997 10.5865Z"></path></svg>
+                            Cancel
+                        </SfButton>
+                    </FooterTemplate>
+                </DialogTemplates>
+            </SfDialog>
+        </div>
+    </header> 
+    
+    <section class="section content px-2">
+        @if (profiles.Contains(ConnectionProfile.WiFi))
+        {
+            <div style="background-color:lightgreen;height:18px;margin-top: -7px;">
+                <h6 style="text-align:right;color:black">WiFi Mode</h6>
+            </div>
+        }
+        else if (profiles.Contains(ConnectionProfile.Cellular))
+        {
+            <div style="background-color:lightgreen;height:18px;margin-top: -7px;">
+                <h6 style="text-align:right;color:black">Mobile Data Mode</h6>
+            </div>
+        }
+        else if (profiles.Contains(ConnectionProfile.Ethernet))
+        {
+            <div style="background-color:lightgreen;height:auto;margin-top: -7px; margin-inline: 4px;" class="row">
+                <div class="col-9">
+                    <h7 style="text-align:left;color:black; font-size:14px;"><b>Last Import : @LastSyncDetI  Export : @LastSyncDetE </b> </h7>
+                </div>
+                <div class="col-3" style="text-align:right;">
+                    <h7 style="text-align:right;color:black; font-size:14px;">
+                    <b>Ethernet Mode</b>
+                    </h7>
+                </div>
+            </div>
+        }
+        <div class="display-top-bar">           
+            <SfDropDownList TValue="string" TItem="string" DataSource="@StatusList" @bind-Value="Status">
+                <DropDownListEvents TItem="string" TValue="string" ValueChange="@ValueChangeHandler"></DropDownListEvents>
+                <DropDownListFieldSettings Text="Text" Value="ID"></DropDownListFieldSettings>
+            </SfDropDownList>
+            <SfTextBox class="e-control e-textbox e-lib e-input" placeholder="Search..." ShowClearButton="true" Enabled=@(!ActBtnDisabled)
+                       Input='((e) => RazorFunc.SearchInGrid(e, DispatchDefaultGrid))'></SfTextBox>
+            <div class="display-inline-btns">                
+                <SfButton IconCss="e-icons e-edit" title="Change selected entry" @onclick="EditEntry"></SfButton>                
+                <SfButton IconCss="e-icons e-trash" title="Delete selected entry" @onclick="DeleteEntry"></SfButton>                
+            </div>
+        </div>        
+        <SfGrid class="tab-grid-min-height" @ref="DispatchDefaultGrid" DataSource="@DispatchDataSource" GridLines="GridLine.Both"
+                RowHeight="@CoreVars.ROWHEIGHT" AllowResizing="true">
+            @* EnableAutoFill="true" *@
+            <GridEvents RowSelected="RowSelectHandler" TValue="ExpandoObject" OnActionFailure="ActionFailureHandler"></GridEvents>
+            <GridSelectionSettings EnableToggle="false"></GridSelectionSettings>
+            <GridColumns>     
+                @foreach (var stru in DataTbl.Columns)
+                {
+                    var field = stru.ToString();
+                    var header = GetHeaderText(field);
+                    bool hidden = IsHidden(field);
+                    bool primaryKey = IsPrimaryKey(field);
+                    <GridColumn Field=@field
+                    HeaderText=@header
+                    TextAlign="TextAlign.Left"
+                    AutoFit="true"
+                    AllowResizing="true"
+                    Visible=@(!primaryKey ? !hidden : false)
+                    IsPrimaryKey=@primaryKey />                    
+                }
+            </GridColumns>
+        </SfGrid>
+        <label hidden="@NoRec">@NoRecMsg</label>
+        <SfSpinner Size="40" @bind-Visible="@SpinnerVisibleProperty" Type="SpinnerType.Bootstrap5"></SfSpinner>
+    </section>
+    <!-- Modal1 : start -->
+        <HelpDesk></HelpDesk>
+    <!-- Modal1 : end -->
+    <!-- Modal2 : start -->
+        <ExitModal></ExitModal>
+    <!-- Modal2 : end -->
+</div>
+
+<style>
+    .e-dialog .e-dlg-header-content {
+        background-color: #00aeff
+    }
+
+    .e-dialog .e-dlg-header {
+        color: #fff
+    }
+
+    .e-dialog .e-dlg-header .e-btn-icon.e-icon-dlg-close {
+        color: #fff
+    }
+
+    .e-btn-icon.e-icons.e-close-icon.e-icon-left:before {
+        content: '\e825';
+    }  
+</style>
+
+@code {
+    IEnumerable<ConnectionProfile> profiles = Connectivity.Current.ConnectionProfiles;
+    List<string> StatusList = new List<string>() { "Scanned", "Not scanned", "All" };
+    private static string Status { get; set; } = "Scanned";
+    private SfGrid<System.Dynamic.ExpandoObject> DispatchDefaultGrid { get; set; }
+    private List<System.Dynamic.ExpandoObject>? DispatchDataSource;
+    GetTableData oTblData;
+    private DataTable? DataTbl = new DataTable();
+    private DataTable? ActionDataTbl = new DataTable();
+    private readonly DatabaseContext _context = new DatabaseContext();
+    private IEnumerable<ProductionTbl> ScannedData;
+    private bool ActBtnDisabled = false;
+    private bool SpinnerVisibleProperty { get; set; } = false;
+    List<string> SaudIdLst = new List<string>();
+    List<string> SaudDetIdLst = new List<string>();
+    List<string> ProdIdLst = new List<string>();
+    private string NoRecMsg = string.Empty;
+    private bool NoRec = false;      
+    SfDialog SearchDialogRef;    
+
+    private string SearchTakaNo { get; set; } = string.Empty;
+    private string ProdSrNo = string.Empty;
+    private string ProdPDate = string.Empty;
+    private string ProdItemName = string.Empty;
+    private string ProdMergeNo = string.Empty;
+    private string ProdGrade = string.Empty;
+    private string ProdShade = string.Empty;
+    private double ProdNetWt = 0;
+    private double ProdMeters = 0;
+    private string ProdPlant = string.Empty;
+    private string ProdStatus = string.Empty;
+    private string ProdInvNo = string.Empty;
+    private string ProdInvDate = string.Empty;
+    private string ProdSaudaNo = string.Empty;
+
+
+    private readonly HashSet<string> hiddenFields = new()
+    {
+        "ItemId", "MergeNoId", "GradeId", "Scanned", "ShadeId", "PlantId",
+        "ItemCode", "DelQty", "SaudaType", "DetId", "Meters", "DoNo", "NetWt"
+    };
+
+    private string GetHeaderText(string field) => field switch
+    {        
+        _ => field
+    };
+
+    private bool IsHidden(string field) => hiddenFields.Contains(field) || field == "Id";
+
+    private bool IsPrimaryKey(string field) => field == "Id";
+
+    protected override async Task OnInitializedAsync()
+    {            
+        Status = "Scanned";
+        DisplayData();      
+    }
+
+    private async void EditEntry()
+    {
+        Global.SaudId = 0;
+        Global.SaudDetId = 0;
+        bool RecSel = await IsRecordSelected(DispatchDefaultGrid);
+        if (RecSel)
+        {
+            Global.SaudId = int.Parse(selRec["Id"].ToString().Trim());
+            Global.SaudDetId = int.Parse(selRec["DetId"].ToString().Trim());
+            Navmanage.NavigateTo("/chlndet");
+        }
+    }
+
+    private async void Importdata()
+    {
+        try
+        {
+            await GetSaudaTblData();
+            await GetProdTblData();
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            await sfDialogService.AlertAsync("Importdata => " + ex.Message, CoreVars.EXERROR);
+        }
+    }    
+    private async Task GetSaudaTblData()
+    {
+        this.SpinnerVisibleProperty = true;
+        //await sfDialogService.AlertAsync("Sauda importe start", CoreVars.APPMANAGER);
+        try
+        {
+            await sfDialogService.AlertAsync("Sauda import process start...", CoreVars.EXERROR);
+            string UnitStr = string.Empty;
+            string FldStr= string.Empty; 
+
+            if (Global.SaudaType == "1")
+            {
+                UnitStr = (Global.UnitType == "MIX") ? " a.DedUnit " : "'" + Global.UnitType + "'";
+                if (Global.UnitType == "MIX")
+                {
+                    FldStr = " case when a.DedUnit = 'PCS' then a.Crtn - a.DelCrtn " +
+                             "      when a.DedUnit = 'Mtr' then a.Meters - a.DelLength " +
+                             "      else a.Qty - a.DelQty end  as BalQty, " +
+                             " case when a.DedUnit = 'PCS' then a.Crtn " +
+                             "      when a.DedUnit = 'Mtr' then a.Meters " +
+                             "      else a.Qty end  as Qty, " +
+                             " case when a.DedUnit = 'PCS' then a.DelCrtn " +
+                             "      when a.DedUnit = 'Mtr' then a.DelLength " +
+                             "      else a.DelQty end  as DelQty, ";
+                }
+                else if (Global.UnitType == "MTR")
+                {
+                    FldStr = " a.Meters - a.DelLength as BalQty, a.Meters as Qty, a.DelLength as DelQty, ";
+                }
+                else if (Global.UnitType == "PCS")
+                {
+                    FldStr = " a.Crtn - a.DelCrtn as BalQty, a.Crtn as Qty, a.DelCrtn as DelQty, ";
+                }
+                else 
+                {
+                    FldStr = " a.Qty - a.DelQty as BalQty, a.Qty as Qty, a.DelQty as DelQty, ";
+                }
+
+                oTblData = new GetTableData
+                {
+                    Query = " select 0 as DetId, b.Code, a.SaudaId, a.SaudaNo, '' as Scanned, a.Date, b.ItemName, c.MergeNo, d.Grade, " + 
+                            " rtrim(e.Shade) + '/' + rtrim(e.ShadeNo) as Shade, f.Plant, " + FldStr + 
+                            " a.ItemId, a.MergeNoId, a.GradeId, a.ShadeId, a.PlantId, a.Status, " + UnitStr + " as UOM " +
+                            " from SAUDAMST a " +
+                            " left join ItemMst b on b.ItemId = a.ItemId " +
+                            " left join MergeNoMst c on c.MergeNoId = a.MergeNoId " +
+                            " left join GradeMst d on d.GradeId = a.GradeId " +
+                            " left join ShadeMst e on e.ShadeId = a.ShadeId " +
+                            " left join PlantMst f on f.PlantId = a.PlantId " +
+                            " where b.Code = '"+ Global.ItemType+ "'" ,
+                    SQLConnStr = Global.PtyDBConnStr
+                };
+            }
+            else if (Global.SaudaType == "2")
+            {
+
+                UnitStr = (Global.UnitType == "MIX") ? " a.DedUnit " : "'" + Global.UnitType + "'";
+                if (Global.UnitType == "MIX")
+                {
+                    FldStr = " case when g.DedUnit = 'PCS' then a.SaudaKg - a.DelQty " +
+                             "      when g.DedUnit = 'Mtr' then a.SaudaMtr - a.a.DelQty " +
+                             "      else a.SaudaKg - a.DelQty end  as BalQty, " +
+                             " case when g.DedUnit = 'PCS' then a.SaudaKg " +
+                             "      when g.DedUnit = 'Mtr' then a.SaudaMtr " +
+                             "      else a.SaudaKg end  as Qty, " +
+                             " case when g.DedUnit = 'PCS' then a.DelQty " +
+                             "      when g.DedUnit = 'Mtr' then a.DelQty " +
+                             "      else a.DelQty end  as DelQty, ";
+                }
+                else if (Global.UnitType == "MTR")
+                {
+                    FldStr = " a.SaudaMtr - a.DelQty as BalQty, a.SaudaMtr as Qty, a.DelQty as DelQty, ";
+                }
+                else if (Global.UnitType == "PCS")
+                {
+                    FldStr = " a.SaudaKg - a.DelQty as BalQty, a.SaudaKg as Qty, a.DelQty as DelQty, ";
+                }
+                else
+                {
+                    FldStr = " a.SaudaQty - a.DelQty as BalQty, a.SaudaQty as Qty, a.DelQty as DelQty, ";
+                }
+
+                oTblData = new GetTableData
+                {
+                    Query = " select a.SudDetId as DetId, b.Code, a.SaudaId, g.SaudaNo, '' as Scanned, a.Date, b.ItemName, c.MergeNo, d.Grade,  " +
+                            " rtrim(e.Shade) + '/' + rtrim(e.ShadeNo) as Shade, f.Plant, " + FldStr + 
+                            " g.ItemId, g.MergeNoId, g.GradeId, g.ShadeId, g.PlantId, a.Status " + UnitStr + " as UOM " + 
+                            " from SAUDADET a "+
+                            " left join SAUDAMST g on g.SaudaID = a.SaudaID "+
+                            " left join ItemMst b on b.ItemId = g.ItemId "+
+                            " left join MergeNoMst c on c.MergeNoId = g.MergeNoId  "+
+                            " left join GradeMst d on d.GradeId = g.GradeId  "+
+                            " left join ShadeMst e on e.ShadeId = g.ShadeId  "+
+                            " left join PlantMst f on f.PlantId = g.PlantId  "+
+                            " where b.Code = '" + Global.ItemType + "'" +
+                            " and a.Date = GetDate() " +
+                            " Group by b.Code, a.SaudaId, g.SaudaNo,"+
+                            " b.ItemName, c.MergeNo, d.Grade, f.Plant, a.SudDetId, "+
+                            " g.ItemId, g.MergeNoId, g.GradeId, g.ShadeId, g.PlantId, a.Status, e.Shade, e.ShadeNo, a.Date" +
+                            " Order by g.SaudaNo " ,
+                    SQLConnStr = Global.PtyDBConnStr
+                };
+            }
+            else if (Global.SaudaType == "3")
+            {
+                oTblData = new GetTableData
+                {
+                    Query = " select b.DODetId as DetId, c.Code, a.DONo, '' as Scanned, a.DOID as SaudaId, a.DODate as Date, b.OrderNo as SaudaNo, "+
+                            "c.ItemName, d.MergeNo,  e.Grade, b.DoQty - b.DelTotQty as BalQty,  " +
+                            "'' as Shade, g.Plant, b.ItemId, b.MergeNoId, "+
+                            "b.GradeId, 0 as ShadeId, a.PlantId, b.Status, b.DOQty as Crtn, b.DelTotQty as DelCrtn "+
+                            "from DOMST a  "+
+                            "left join DODET b on a.DOID = b.DOID "+
+                            "left join ITEMMST c on b.ItemId = c.ItemId "+
+                            "left join MERGENOMST d on b.MergeNoId = d.MergeNoId "+
+                            "left join GRADEMST e on b.GradeId = e.GradeID " +
+                            "left join PlantMst g on g.PlantId = a.PlantId "+
+                            "where c.Code = 'YARN' and a.doDate = '2025-04-15 00:00:00' "+
+                            "Order by a.DONo, a.DODate ",
+                    SQLConnStr = Global.PtyDBConnStr
+                };
+            }
+            var json = JsonConvert.SerializeObject(oTblData);
+            var response = await RazorFunc.CallAPIAsync((string.IsNullOrEmpty(Global.PtyAPIURL) ? Global.APIURL : Global.PtyAPIURL), "GetTableData", json);
+            var respStatusCode = response.StatusCode;
+            if (respStatusCode.ToString() == "OK")
+            {
+                var responseBody = await response.Content.ReadAsStringAsync();
+                var retJSON = JsonConvert.DeserializeObject<RetJSON>(responseBody);
+                if (retJSON.Status.ToString() == "Error")
+                {
+                    await sfDialogService.AlertAsync(retJSON.Msg.ToString() + retJSON.ExError, CoreVars.EXERROR);
+                }
+                else
+                {                    
+                    // await _context.DeleteAlllItemsAsync<SaudTbl>();
+                    var DataTbl = JsonConvert.DeserializeObject<DataTable>(retJSON.Data.ToString().Trim());
+                    SaudTbl SaudLst;                             
+                    SaudIdLst = new List<string>();
+                    SaudDetIdLst = new List<string>();
+                    string SaudaLststr = "0";
+                    string SaudaDetLststr = "0";
+                    await _context.setProgramSyncronous(false);
+                    foreach (DataRow Row in DataTbl.Rows)
+                    {                    
+                        SaudLst = new SaudTbl();
+                        int SaudaId = int.Parse(Row["SaudaId"].ToString().Trim());
+                        int SaudaDetId = (Global.SaudaType == "2" || Global.SaudaType == "3"  ? int.Parse(Row["DetId"].ToString().Trim()) : 0);
+                        Expression<Func<SaudTbl, bool>> predicare = SaudaTbl => (SaudaTbl.Id == SaudaId && SaudaTbl.DetId == SaudaDetId && SaudaTbl.SaudaType == Global.SaudaType);
+                        var FilterSaudaData = (await _context.GetFileteredAsync(predicare)).ToList();
+                        if (FilterSaudaData.Count() == 1 || FilterSaudaData.Count() == 0)
+                        {
+                            if (Double.Parse(Row["BalQty"].ToString()) > 0 && Row["Status"].ToString().Trim().ToUpper() != "C")
+                            {
+                                var table1 = await _context.DeleteItemByKeyAsync<SaudTbl>(SaudaId);
+                                SaudLst.Id = int.Parse(Row["SaudaId"].ToString().Trim());                                
+                                SaudLst.DetId = int.Parse(Row["DetId"].ToString().Trim());
+                                SaudLst.SNo = Row["SaudaNo"].ToString().Trim();  
+                                if (Global.SaudaType == "3")
+                                {
+                                    SaudLst.DoNo = Row["DoNo"].ToString().Trim();
+                                }                                
+                                string SDate = "";
+                                if (!string.IsNullOrEmpty(Row["Date"].ToString()))
+                                {
+                                    DateTime? Date = DateTime.Parse(Row["Date"].ToString().Trim());
+                                    SDate = Date.Value.ToString("dd/MM/yyyy");
+                                }
+                                SaudLst.SDate = (!string.IsNullOrEmpty(Row["Date"].ToString().Trim()) ? SDate : "");
+                                SaudLst.SaudaType = Global.SaudaType;
+                                SaudLst.OrdQty = double.Parse(Row["Qty"].ToString().Trim());
+                                SaudLst.BalQty = double.Parse(Row["BalQty"].ToString().Trim());
+                                SaudLst.DelQty = double.Parse(Row["DelQty"].ToString().Trim());
+                                SaudLst.Scanned = Row["Scanned"].ToString().Trim();
+                                SaudLst.ItemName = Row["ItemName"].ToString().Trim();
+                                SaudLst.ItemId = int.Parse(Row["ItemId"].ToString().Trim());
+                                SaudLst.MergeNo = Row["MergeNo"].ToString().Trim();
+                                SaudLst.MergeNoId = int.Parse(Row["MergeNoId"].ToString().Trim());
+                                SaudLst.Grade = Row["Grade"].ToString().Trim();
+                                SaudLst.GradeId = int.Parse(Row["GradeId"].ToString().Trim());
+                                SaudLst.Plant = Row["Plant"].ToString().Trim();
+                                SaudLst.PlantId = int.Parse(Row["PlantId"].ToString().Trim());
+                                SaudLst.Shade = Row["Shade"].ToString().Trim();
+                                SaudLst.ShadeId = int.Parse(Row["ShadeId"].ToString().Trim());
+                                SaudLst.ItemCode = Row["Code"].ToString().Trim();
+                                // if( Global.SaudaType == "2" && Global.ItemType == "YARN")
+                                // {
+                                //     SaudLst.Meters = double.Parse(Row["Mtr"].ToString().Trim());
+                                //     SaudLst.NetWt = double.Parse(Row["Crtn"].ToString().Trim());
+                                // }
+                                SaudLst.DevQty = 0;
+                                SaudLst.Exported = "";
+                                SaudIdLst.Add(Row["SaudaId"].ToString().Trim());
+                                if (Global.SaudaType == "2" || Global.SaudaType == "3")
+                                {
+                                    SaudDetIdLst.Add(Row["DetId"].ToString().Trim());
+                                }
+                                SaudLst.UOM = Row["UOM"].ToString().Trim();
+                                await _context.AddItemAsync<SaudTbl>(SaudLst);
+                            }
+                            else
+                            {
+                                var table1 = await _context.DeleteItemByKeyAsync<SaudTbl>(SaudaId);
+                            }
+                        }
+                    }
+                    await _context.setProgramSyncronous(true);
+                    List<AllRowValue> allRowValues = new List<AllRowValue>();
+                    List<RowValue> RowData = new List<RowValue>();
+                    if(SaudIdLst.Count() != 0)
+                    {
+                        SaudaLststr = string.Join(",", SaudIdLst);
+                    }
+                    if(SaudDetIdLst.Count() != 0)
+                    {
+                        SaudaDetLststr = string.Join(",", SaudDetIdLst);
+                    }
+                    RowData.Add(new RowValue { FldName = "Exported", FldValue = 'Y' });
+                    AllRowValue allRowValue = new AllRowValue
+                    {
+                        AllRowValues = RowData
+                    };
+                    allRowValues.Add(allRowValue);
+                    if (Global.SaudaType == "1" )
+                    {
+                        await ExportMark(allRowValues, "SaudaMst", SaudaLststr, "SaudaId", "GetSaudaTblData");
+                    }
+                    else if(Global.SaudaType == "2")
+                    {
+                        await ExportMark(allRowValues, "SaudaMst", SaudaLststr, "SaudaId", "GetSaudaTblData");
+                        await ExportMark(allRowValues, "SaudaDet", SaudaDetLststr, "SudDetId", "GetSaudaTblData");
+                    }
+                    else if (Global.SaudaType == "3")
+                    {
+                        await ExportMark(allRowValues, "DoMst", SaudaLststr, "DOId", "GetSaudaTblData");
+                        await ExportMark(allRowValues, "DoDet", SaudaDetLststr, "DODetId", "GetSaudaTblData");
+                    }
+                    await sfDialogService.AlertAsync("Sauda details imported successfully.", CoreVars.APPMANAGER);
+                }
+                this.SpinnerVisibleProperty = false;
+            }
+            await sfDialogService.AlertAsync("Sauda import process end...", CoreVars.EXERROR);
+        }
+        catch (Exception ex)
+        {
+            await sfDialogService.AlertAsync("GetSaudaTblData => " + ex.Message, CoreVars.EXERROR);
+        }
+    }
+
+    private async Task GetProdTblData()
+    {
+        bool Lretval = true;
+        this.SpinnerVisibleProperty = true;
+        //await sfDialogService.AlertAsync("Production importe start", CoreVars.APPMANAGER);
+        try
+        {
+            await sfDialogService.AlertAsync("Crtn production import process start...", CoreVars.EXERROR);
+            oTblData = new GetTableData
+            {
+                Query = "select ROW_NUMBER() OVER(ORDER BY x.SrNo) as SrNo, x.ChlnNo, x.ChlnChr ,x.ChlnDate, "+
+                        "x.SaudaId, x.ProductionId, x.PDate ,x.TakaNo, x.Edited, x.ItemName, x.MergeNo, x.Grade, "+
+                        "x.NetWt, x.Meters, x.Shade, x.Plant, x.ItemId, x.MergeNoId, "+
+                        "x.GradeId, x.ShadeId, x.PlantId from ( "+
+                        "select ROW_NUMBER() OVER(ORDER BY a.ProductionId) AS SrNo, a.ChlnNo, a.ChlnChr ,a.ChlnDate, "+
+                        "a.OrderId  SaudaId, a.ProductionId, a.PDate ,a.CrtnNo as TakaNo, a.Edited, b.ItemName, c.MergeNo, d.Grade, " +
+                        "a.NetWt, a.Meters, rtrim(e.Shade) + '/' + rtrim(e.ShadeNo) as Shade, f.Plant, a.ItemId, a.MergeNoId, "+
+                        "a.GradeId, a.ShadeId, a.PlantId "+
+                        "from Production a "+
+                        "left join ItemMst b on b.ItemId = a.ItemId "+
+                        "left join MergeNoMst c on c.MergeNoId = a.MergeNoId "+
+                        "left join GradeMst d on d.GradeId = a.GradeId "+
+                        "left join ShadeMst e on e.ShadeId = a.ShadeId "+
+                        "left join PlantMst f on f.PlantId = a.PlantId "+
+                        "where a.CrtnSold <> 'Y' and a.Deleted <> 'Y' "+
+                        " and b.Code = '"+ Global.ItemType + "'" +
+                        "and a.Exported <> 'Y' and a.OrderId = 0 and Checked = 'Y'"+
+                        "union all "+
+                        "select ROW_NUMBER() OVER(ORDER BY a.InvDetId) AS SrNo, b.SrNo as ChlnNo, g.SrChr as ChlnChr , b.ChalDate ChlnDate, "+
+	                    "a.OrdID  SaudaId, a.InvDetId as ProductionId, b.ChalDate PDate ,a.PalletNo as TakaNo, b.Edited, c.ItemName, d.MergeNo, e.Grade, "+
+	                    "a.NetWt, a.Meters, rtrim(f.Shade) + '/' + rtrim(f.ShadeNo) as Shade, g.Plant, a.ItemId, a.MergeNoId, "+
+	                    "a.GradeId, a.ShadeId, g.PlantId  "+
+	                    "from PCInvoiceDet a "+
+	                    "left join PCInvoiceMst b on a.InvId = b.InvID "+
+	                    "left join ItemMst c on c.ItemId = a.ItemId "+
+	                    "left join MergeNoMst d on d.MergeNoId = a.MergeNoId "+
+	                    "left join GradeMst e on e.GradeId = a.GradeId "+
+	                    "left join ShadeMst f on f.ShadeId = a.ShadeId "+
+	                    "left join PlantMst g on g.PlantId = b.PlantId "+
+                        "where a.CrtnSold <> 'Y' and b.Deleted <> 'Y' " +
+                        " and c.Code = '" + Global.ItemType + "'" +
+                        "and a.OrdId = 0 and a.Exported <> 'Y' " +
+                        ") x Order by x.SrNo ",
+                SQLConnStr = Global.PtyDBConnStr
+            };
+            var table2 = await _context.GetAllAsync<ProductionTbl>();
+            var json = JsonConvert.SerializeObject(oTblData);
+            var response = await RazorFunc.CallAPIAsync((string.IsNullOrEmpty(Global.PtyAPIURL) ? Global.APIURL : Global.PtyAPIURL), "GetTableData", json);
+            var respStatusCode = response.StatusCode;
+            if (respStatusCode.ToString() == "OK")
+            {
+                var responseBody = await response.Content.ReadAsStringAsync();
+                var retJSON = JsonConvert.DeserializeObject<RetJSON>(responseBody);
+                if (retJSON.Status.ToString() == "Error")
+                {
+                    await sfDialogService.AlertAsync(retJSON.Msg.ToString() + retJSON.ExError, CoreVars.EXERROR);
+                }
+                else
+                {
+                    var DataTbl = JsonConvert.DeserializeObject<DataTable>(retJSON.Data.ToString().Trim());
+                    ProductionTbl ProdLst;  
+                    string ProdLststr = "0";
+                    ProdIdLst = new List<string>();
+                    await _context.setProgramSyncronous(false);
+                    foreach (DataRow Row in DataTbl.Rows)
+                    {
+                        ProdLst = new ProductionTbl();
+                        int ProdId = int.Parse(Row["ProductionId"].ToString().Trim());
+                        Expression<Func<ProductionTbl, bool>> predicare = Productiontbl => (Productiontbl.Id == ProdId);
+                        var FilterProdData = (await _context.GetFileteredAsync(predicare)).ToList();
+                        if (FilterProdData.Count() == 1 || FilterProdData.Count() == 0)
+                        {
+                            var table1 = await _context.DeleteItemByKeyAsync<ProductionTbl>(ProdId);
+                            ProdLst.Id = int.Parse(Row["ProductionId"].ToString().Trim());
+                            ProdLst.SrNo = Row["SrNo"].ToString().Trim();
+                            ProdLst.EntryNo = "";
+                            ProdLst.SadaId = int.Parse(Row["SaudaId"].ToString().Trim());
+                            string PDate = "";
+                            if (!string.IsNullOrEmpty(Row["PDate"].ToString()))
+                            {
+                                DateTime? Date = DateTime.Parse(Row["PDate"].ToString().Trim());
+                                PDate = Date.Value.ToString("dd/MM/yyyy");
+                            }
+                            ProdLst.PDate = (!string.IsNullOrEmpty(Row["PDate"].ToString().Trim()) ? PDate : "");
+                            ProdLst.TakaNo = Row["TakaNo"].ToString().Trim();
+                            ProdLst.NetWt = double.Parse(Row["NetWt"].ToString().Trim());
+                            ProdLst.Meters = double.Parse(Row["Meters"].ToString().Trim());
+                            ProdLst.ItemName = Row["ItemName"].ToString().Trim();
+                            ProdLst.ItemId = int.Parse(Row["ItemId"].ToString().Trim());
+                            ProdLst.MergeNo = Row["MergeNo"].ToString().Trim();
+                            ProdLst.MergeNoId = int.Parse(Row["MergeNoId"].ToString().Trim());
+                            ProdLst.Grade = Row["Grade"].ToString().Trim();
+                            ProdLst.GradeId = int.Parse(Row["GradeId"].ToString().Trim());
+                            ProdLst.ShadeId = Row["ShadeId"].ToString().Trim();
+                            ProdLst.Shade = Row["Shade"].ToString().Trim();
+                            ProdLst.PlantId = int.Parse(Row["PlantId"].ToString().Trim());
+                            ProdLst.Plant = Row["Plant"].ToString().Trim();
+                            ProdLst.ChlnNo = Row["ChlnNo"].ToString().Trim() +" / "+ Row["ChlnChr"].ToString().Trim();
+                            ProdLst.ChlnDate = Row["ChlnDate"].ToString().Trim();
+                            ProdLst.Exported = "";
+                            ProdLst.EntSr = 0;
+                            ProdIdLst.Add(Row["ProductionId"].ToString().Trim());
+                        }
+                        await _context.AddItemAsync<ProductionTbl>(ProdLst);
+                    }
+                    await _context.setProgramSyncronous(true);
+                    var table = await _context.GetAllAsync<ProductionTbl>();
+                    var Arr2 = SplitToSublists(ProdIdLst);
+                    foreach(var data in Arr2)
+                    {
+                        List<AllRowValue> allRowValues = new List<AllRowValue>();
+                        List<RowValue> RowData = new List<RowValue>();
+                        ProdLststr = string.Join(",", data);
+                        RowData.Add(new RowValue { FldName = "Exported", FldValue = 'Y' });
+                        AllRowValue allRowValue = new AllRowValue
+                        {
+                            AllRowValues = RowData
+                        };
+                        allRowValues.Add(allRowValue);
+                        Lretval = await ExportMark(allRowValues, "Production", ProdLststr, "ProductionId", "GetProdTblData");
+                        Lretval = await ExportMark(allRowValues, "PCInvoiceDet", ProdLststr, "InvDetId", "GetProdTblData");
+                    }
+                    if (Lretval)
+                    {
+                        await sfDialogService.AlertAsync("Production details imported successfully.", CoreVars.APPMANAGER);
+                        await StatusUpdate("Import");
+                        DisplayData();
+                    }
+                }
+                this.SpinnerVisibleProperty = false;
+            }
+            await sfDialogService.AlertAsync("Crtn production import process end...", CoreVars.EXERROR);
+        }
+        catch (Exception ex)
+        {
+            await sfDialogService.AlertAsync("GetProdTblData => " + ex.Message, CoreVars.EXERROR);
+        }
+    }
+
+    private async Task<bool> IsRecordSelected(SfGrid<System.Dynamic.ExpandoObject> DefaultGrid) // to be added in library
+    {
+        bool Retval = true;
+        var getSelected = await DefaultGrid.GetSelectedRowIndexesAsync();
+        if (getSelected.Count <= 0)
+        {
+            Retval = false;
+            await sfDialogService.AlertAsync("Please select line item to make any data operation .", CoreVars.APPDATAMANAGER);
+        }
+        return Retval;
+    }
+
+    private DataTable ListToDataTable<T>(List<T> items)
+    {
+        DataTable dataTable = new DataTable(typeof(T).Name);
+        PropertyInfo[] Props = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance);
+        foreach (PropertyInfo prop in Props)
+        {
+            dataTable.Columns.Add(prop.Name);
+        }
+        foreach (T item in items)
+        {
+            var values = new object[Props.Length];
+            for (int i = 0; i < Props.Length; i++)
+            {
+                values[i] = Props[i].GetValue(item, null);
+            }
+            dataTable.Rows.Add(values);
+        }
+        return dataTable;
+    }
+    IDictionary<string, object>? selRec;
+    private async void RowSelectHandler(RowSelectEventArgs<ExpandoObject> args)
+    {
+        selRec = args.Data as IDictionary<string, object>;
+        string Id = selRec["Id"].ToString();                      
+    }
+
+    private async void DisplayData()
+    {
+        try
+        {              
+            await GetstatusData("Import");
+            await GetstatusData("Export");
+
+            if (Status == "Scanned")
+            {
+                var table = await _context.GetAllAsync<SaudTbl>();
+                Expression<Func<SaudTbl, bool>> predicare = SaudaTbl => (SaudaTbl.Scanned == "Y" && SaudaTbl.SaudaType == Global.SaudaType);
+                var ScannedData = (await _context.GetFileteredAsync(predicare)).ToList();
+                DataTbl = ListToDataTable(ScannedData);                
+            }
+            else if(Status == "Not scanned")
+            {
+                Expression<Func<SaudTbl, bool>> predicare = SaudaTbl => (SaudaTbl.Scanned == "" && SaudaTbl.SaudaType == Global.SaudaType);
+                var NotScannedData = (await _context.GetFileteredAsync(predicare)).ToList();
+                DataTbl = ListToDataTable(NotScannedData);
+            }
+            else
+            {
+                Expression<Func<SaudTbl, bool>> predicare = SaudaTbl => (SaudaTbl.SaudaType == Global.SaudaType);
+                var AllScanned = (await _context.GetFileteredAsync(predicare)).ToList();
+                DataTbl = ListToDataTable(AllScanned);
+            }
+            DispatchDataSource = new List<System.Dynamic.ExpandoObject>();
+            if (DataTbl.Rows.Count > 0)
+            {
+                foreach (DataRow row in DataTbl.Rows)
+                {
+                    System.Dynamic.ExpandoObject e = new System.Dynamic.ExpandoObject();
+                    foreach (DataColumn col in DataTbl.Columns)
+                    {
+                        e.TryAdd(col.ColumnName, row.ItemArray[col.Ordinal]);
+                    }
+                    DispatchDataSource.Add(e);
+                }
+            }
+            else
+            {
+                await sfDialogService.AlertAsync("No records found for selected criteria.", CoreVars.ERROR);
+            }    
+            await DispatchDefaultGrid.Refresh();
+        }
+        catch (Exception ex)
+        {
+            await sfDialogService.AlertAsync("DisplayData => "+ex.Message, CoreVars.EXERROR);
+        }
+        StateHasChanged();
+    }
+
+    private void ActionFailureHandler(Syncfusion.Blazor.Grids.FailureEventArgs args)
+    {
+        sfDialogService.AlertAsync("ActionFailureHandler => " + args.Error.Message, CoreVars.ERROR);
+    }
+
+    private async void ValueChangeHandler()
+    {
+        DisplayData();
+    }
+
+    public async void DeleteEntry()
+    {
+        try
+        {           
+            bool RecSel = await IsRecordSelected(DispatchDefaultGrid);
+            if (RecSel)
+            {
+                string SaudaNo = selRec["SNo"].ToString();
+                bool isConfirm = await sfDialogService.ConfirmAsync("Are you sure to delete SaudaNo. " + SaudaNo +" ?", CoreVars.APPMANAGER);
+                if (isConfirm)
+                {
+                    if (selRec["Scanned"].ToString() == "Y")
+                    {
+                        int Id = int.Parse(selRec["Id"].ToString().Trim());
+                        Expression<Func<ProductionTbl, bool>> predicare = Productiontbl => (Productiontbl.SadaId == Id && Productiontbl.Exported != "Y");
+                        var Scanntaka = (await _context.GetFileteredAsync(predicare)).ToList();
+                        foreach (var data in Scanntaka)
+                        {
+                            ProductionTbl ProdLst;
+                            ProdLst = new ProductionTbl();
+                            ProdLst.Id = data.Id;
+                            ProdLst.SrNo = data.SrNo;
+                            ProdLst.SadaId = 0;
+                            ProdLst.SadaDetId = 0;
+                            ProdLst.PDate = data.PDate;
+                            ProdLst.TakaNo = data.TakaNo;
+                            ProdLst.ItemName = data.ItemName;
+                            ProdLst.ItemId = data.ItemId;
+                            ProdLst.MergeNo = data.MergeNo;
+                            ProdLst.MergeNoId = data.MergeNoId;
+                            ProdLst.Grade = data.Grade;
+                            ProdLst.GradeId = data.GradeId;
+                            ProdLst.NetWt = data.NetWt;
+                            ProdLst.Meters = data.Meters;
+                            ProdLst.Shade = data.Shade;
+                            ProdLst.ShadeId = data.ShadeId;
+                            ProdLst.Plant = data.Plant;
+                            ProdLst.PlantId = data.PlantId;
+                            await _context.UpdateItemAsync<ProductionTbl>(ProdLst);
+                        }
+                        Expression<Func<ProductionTbl, bool>> predicare2 = Productiontbl => (Productiontbl.SadaId == Id && Productiontbl.Exported == "Y");
+                        var PreQty = (await _context.GetFileteredAsync(predicare2)).ToList();
+                        int PrevQty = PreQty.Count();
+                        Expression<Func<SaudTbl, bool>> predicare3 = SaudaTbl => (SaudaTbl.Id == Id && SaudaTbl.SaudaType == Global.SaudaType);
+                        var ScannedData = (await _context.GetFileteredAsync(predicare3)).ToList();
+                        var Obj = ScannedData.FirstOrDefault();
+                        if( Obj != null)
+                        {
+                            SaudTbl SaudLst;
+                            SaudLst = new SaudTbl();
+                            SaudLst.Id = Obj.Id;
+                            SaudLst.DetId = Obj.DetId;
+                            SaudLst.SNo = Obj.SNo;
+                            SaudLst.DoNo = Obj.DoNo;
+                            SaudLst.SDate = Obj.SDate;
+                            SaudLst.Scanned = "";
+                            SaudLst.ItemName = Obj.ItemName;
+                            SaudLst.ItemId = Obj.ItemId;
+                            SaudLst.MergeNo = Obj.MergeNo;
+                            SaudLst.MergeNoId = Obj.MergeNoId;
+                            SaudLst.Grade = Obj.Grade;
+                            SaudLst.GradeId = Obj.GradeId;
+                            SaudLst.Plant = Obj.Plant;
+                            SaudLst.PlantId = Obj.PlantId;
+                            SaudLst.DelQty = Obj.DelQty;
+                            SaudLst.OrdQty = Obj.OrdQty;
+                            SaudLst.BalQty = (Math.Round(Obj.OrdQty, 2) - Math.Round(Obj.DelQty, 2) - PrevQty);
+                            SaudLst.Shade = Obj.Shade;
+                            SaudLst.ShadeId = Obj.ShadeId;
+                            SaudLst.Meters = Obj.Meters;
+                            SaudLst.ItemCode = Obj.ItemCode;
+                            SaudLst.SaudaType = Obj.SaudaType;
+                            SaudLst.UOM = Obj.UOM;
+                            SaudLst.DevQty = Math.Round(SaudLst.OrdQty, 2) - Math.Round(SaudLst.DelQty) - Math.Round(SaudLst.BalQty, 2);
+                            await _context.UpdateItemAsync<SaudTbl>(SaudLst);
+                            await sfDialogService.AlertAsync("Data Deleted Successfullly.", CoreVars.EXERROR);
+                        }
+                    }
+                    else
+                    {
+                        await sfDialogService.AlertAsync("You can't delete the record.", CoreVars.EXERROR);
+                    }
+                }                
+            }
+            DisplayData();
+        }
+        catch (Exception ex)
+        {
+            await sfDialogService.AlertAsync("DeleteEntry =>"+ex.Message, CoreVars.EXERROR);
+        }
+    }
+
+    public async Task ExportData()
+    {
+        try
+        {            
+            await sfDialogService.AlertAsync("Exportdata process start...", CoreVars.EXERROR);
+            string ProdLststr = "0";
+            bool Lretval = false;
+            string SaudId = string.Empty;
+            string SaudDetId = string.Empty;
+            Expression<Func<SaudTbl, bool>> predicare = user => (user.Scanned == "Y" && user.SaudaType == Global.SaudaType );
+            var Scannedtaka = (await _context.GetFileteredAsync(predicare)).ToList();
+            if(Scannedtaka.Count() != 0)
+            {
+                foreach(var SaudIddata in Scannedtaka)
+                {
+                    SaudIdLst = new List<string>();
+                    ProdIdLst = new List<string>();
+                    SaudIdLst.Add(SaudIddata.Id.ToString());
+                    if (SaudIdLst.Contains(SaudIddata.Id.ToString()))
+                    {
+                        SaudId = SaudIddata.Id.ToString().Trim();
+                        SaudDetId = SaudIddata.DetId.ToString().Trim();
+                        Expression<Func<ProductionTbl, bool>> predicare2 = Productiontbl => (Productiontbl.SadaId == SaudIddata.Id && Productiontbl.SadaDetId == SaudIddata.DetId);
+                        var getProdId = (await _context.GetFileteredAsync(predicare2)).ToList();
+                        foreach(var ProdIddata in getProdId)
+                        {
+                            ProdIdLst.Add(ProdIddata.Id.ToString());
+                        }
+                        var ExportProdArr = SplitToSublists(ProdIdLst);
+                        foreach (var data in ProdIdLst)
+                        {
+                            int id = int.Parse(data);
+                            Expression<Func<ProductionTbl, bool>> predicare3 = Productiontbl => (Productiontbl.Id == id);
+                            var GetEntNoData = (await _context.GetFileteredAsync(predicare3)).ToList();
+                            var GetEntNo = GetEntNoData.FirstOrDefault();
+                            List<AllRowValue> allRowValues = new List<AllRowValue>();
+                            List<RowValue> RowData = new List<RowValue>();
+                            // ProdLststr = string.Join(",", data);
+                            RowData.Add(new RowValue { FldName = "OrderId", FldValue = SaudIddata.Id });
+                            RowData.Add(new RowValue { FldName = "OrdDetId", FldValue = SaudIddata.DetId });
+                            RowData.Add(new RowValue { FldName = "Scanned", FldValue = "Y" });
+                            RowData.Add(new RowValue { FldName = "Expentno", FldValue = GetEntNo.EntryNo });
+                            AllRowValue allRowValue = new AllRowValue
+                            {
+                                AllRowValues = RowData
+                            };
+                            allRowValues.Add(allRowValue);
+                            Lretval = await ExportMark(allRowValues, "Production", data, "ProductionId", "ExportData"); // Production
+                            var item = RowData.FirstOrDefault(x => x.FldName == "OrderId");
+                            allRowValues = new List<AllRowValue>();
+                            if (item != null)
+                            {
+                                item.FldName = "OrdId";
+                            }
+                            allRowValue = new AllRowValue
+                            {
+                                AllRowValues = RowData
+                            };
+                            allRowValues.Add(allRowValue);
+                            Lretval = await ExportMark(allRowValues, "PCInvoiceDet", data, "InvDetId", "ExportData"); // PCInvoiceDet
+                        }                
+                        List<AllRowValue> allRowValues2 = new List<AllRowValue>();
+                        List<RowValue> RowData2 = new List<RowValue>();
+                        ProdLststr = string.Join(",", ProdIdLst);
+                        RowData2.Add(new RowValue { FldName = "ScanQty", FldValue = int.Parse(getProdId.Count().ToString()) });
+                        AllRowValue allRowValue2 = new AllRowValue
+                        {
+                            AllRowValues = RowData2
+                        };
+                        allRowValues2.Add(allRowValue2);
+                        if (Global.SaudaType == "1")
+                        {
+                            Lretval = await ExportMark(allRowValues2, "SaudaMst", SaudId, "SaudaId", "Export SaudaMst");
+                        }
+                        else if (Global.SaudaType == "2")
+                        {
+                            Lretval = await ExportMark(allRowValues2, "SaudaMst", SaudId, "SaudaId", "Export SaudaMst");
+                            Lretval = await ExportMark(allRowValues2, "SaudaDet", SaudDetId, "SudDetId", "Export SaudaMst");
+                        }
+                        else if (Global.SaudaType == "3")
+                        {
+                            Lretval = await ExportMark(allRowValues2, "DoMst", SaudId, "DOId", "Export SaudaMst");
+                            Lretval = await ExportMark(allRowValues2, "DoDet", SaudDetId, "DODetId", "Export SaudaMst");
+                        }                        
+                    }
+                    if(Lretval)
+                    {                        
+                        Expression<Func<ProductionTbl, bool>> predicare3 = Productiontbl => (Productiontbl.SadaId == SaudIddata.Id);
+                        var GetUptdata = (await _context.GetFileteredAsync(predicare3)).ToList();
+                        foreach (var ObjData in GetUptdata)
+                        {
+                            ProductionTbl ProdLst;
+                            ProdLst = new ProductionTbl();
+                            ProdLst.Id = ObjData.Id;
+                            ProdLst.SrNo = ObjData.SrNo;
+                            ProdLst.SadaId = ObjData.SadaId;
+                            ProdLst.SadaDetId = ObjData.SadaDetId;
+                            ProdLst.PDate = ObjData.PDate;
+                            ProdLst.TakaNo = ObjData.TakaNo;
+                            ProdLst.NetWt = ObjData.NetWt;
+                            ProdLst.Meters = ObjData.Meters;
+                            ProdLst.ItemName = ObjData.ItemName;
+                            ProdLst.ItemId = ObjData.ItemId;
+                            ProdLst.MergeNo = ObjData.MergeNo;
+                            ProdLst.MergeNoId = ObjData.MergeNoId;
+                            ProdLst.Grade = ObjData.Grade;
+                            ProdLst.GradeId = ObjData.GradeId;
+                            ProdLst.ShadeId = ObjData.ShadeId;
+                            ProdLst.Shade = ObjData.Shade;
+                            ProdLst.PlantId = ObjData.PlantId;
+                            ProdLst.Plant = ObjData.Plant;
+                            ProdLst.ChlnNo = ObjData.ChlnNo;
+                            ProdLst.ChlnDate = ObjData.ChlnDate;
+                            ProdLst.EntryNo = ObjData.EntryNo;
+                            ProdLst.EntSr = ObjData.EntSr;
+                            ProdLst.Exported = "Y";
+                            await _context.UpdateItemAsync<ProductionTbl>(ProdLst);
+                        }
+                        SaudTbl SaudLst;
+                        SaudLst = new SaudTbl();
+                        SaudLst.Id = SaudIddata.Id;
+                        SaudLst.DetId = SaudIddata.DetId;
+                        SaudLst.SNo = SaudIddata.SNo;
+                        SaudLst.DoNo = SaudIddata.DoNo;
+                        SaudLst.SDate = SaudIddata.SDate;
+                        SaudLst.OrdQty = SaudIddata.OrdQty;
+                        SaudLst.BalQty = SaudIddata.BalQty;
+                        SaudLst.DelQty = SaudIddata.DelQty;
+                        SaudLst.Scanned = "";
+                        SaudLst.ItemName = SaudIddata.ItemName;
+                        SaudLst.ItemId = SaudIddata.ItemId;
+                        SaudLst.MergeNo = SaudIddata.MergeNo;
+                        SaudLst.MergeNoId = SaudIddata.MergeNoId;
+                        SaudLst.Grade = SaudIddata.Grade;
+                        SaudLst.GradeId = SaudIddata.GradeId;
+                        SaudLst.Plant = SaudIddata.Plant;
+                        SaudLst.PlantId = SaudIddata.PlantId;
+                        SaudLst.Shade = SaudIddata.Shade;
+                        SaudLst.ShadeId = SaudIddata.ShadeId;
+                        SaudLst.DevQty = SaudIddata.DevQty;
+                        SaudLst.Meters = SaudIddata.Meters;
+                        SaudLst.NetWt = SaudIddata.NetWt;
+                        SaudLst.ItemCode = SaudIddata.ItemCode;
+                        SaudLst.SaudaType = Global.SaudaType;
+                        SaudLst.UOM = SaudIddata.UOM;
+                        SaudLst.Exported = "Y";
+                        await _context.UpdateItemAsync<SaudTbl>(SaudLst);
+                    }
+                }
+            }
+            await sfDialogService.AlertAsync("Data Exported successfully...", CoreVars.APPMANAGER);
+            // await GetSaudaTblData();
+            // await GetProdTblData();
+            await StatusUpdate("Export");
+            StateHasChanged();
+            DisplayData();
+            await sfDialogService.AlertAsync("Exportdata process end...", CoreVars.EXERROR);
+        }
+        catch (Exception ex)
+        {
+            await sfDialogService.AlertAsync("ExportData => "+ex.Message, CoreVars.EXERROR);
+        }
+    }
+
+    private async void OpenProfilePage()
+    {
+        Navmanage.NavigateTo("/profilepg");
+    }
+
+    public List<List<string>> SplitToSublists(List<string> source)
+    {
+        return source
+            .Select((x, i) => new { Index = i, Value = x })
+            .GroupBy(x => x.Index / 10000)
+            .Select(x => x.Select(v => v.Value).ToList())
+            .ToList();
+    }    
+
+    private async void OpenSearchDialog()
+    {
+        SearchTakaNo = string.Empty;
+        ProdSrNo = string.Empty;
+        ProdPDate = string.Empty;
+        ProdItemName = string.Empty;
+        ProdMergeNo = string.Empty;
+        ProdGrade = string.Empty;
+        ProdShade = string.Empty;
+        ProdNetWt = 0;
+        ProdMeters = 0;
+        ProdPlant = string.Empty;
+        ProdStatus = string.Empty;
+        ProdInvNo = string.Empty;
+        ProdInvDate = string.Empty;
+        ProdSaudaNo = string.Empty;
+        await this.SearchDialogRef.ShowAsync(true);
+    }
+
+    private async void CloseSearchDialog()
+    {        
+        await this.SearchDialogRef.HideAsync();        
+    }    
+    private async void FindTaka()
+    {        
+        try
+        {
+            int SuadaId = 0;
+            int SuadaDetId = 0;
+            SearchTakaNo = SearchTakaNo.ToString().Trim();
+            Expression<Func<ProductionTbl, bool>> predicate = Productiontbl => (Productiontbl.TakaNo == SearchTakaNo);
+            var getTakaDetail = (await _context.GetFileteredAsync(predicate)).ToList();
+            if(getTakaDetail.Count() != 0)
+            {
+                var TakaDetailObj = getTakaDetail.FirstOrDefault();     
+                ProdSrNo = TakaDetailObj.SrNo;
+                ProdPDate = TakaDetailObj.PDate;
+                ProdItemName = TakaDetailObj.ItemName;
+                ProdMergeNo = TakaDetailObj.MergeNo;
+                ProdGrade = TakaDetailObj.Grade;
+                ProdShade = TakaDetailObj.Shade;
+                ProdNetWt = TakaDetailObj.NetWt;
+                ProdMeters = TakaDetailObj.Meters;
+                ProdPlant = TakaDetailObj.Plant;
+                ProdInvNo = TakaDetailObj.ChlnNo;
+                ProdInvDate = TakaDetailObj.ChlnDate;
+                SuadaId = (TakaDetailObj.SadaId == null && TakaDetailObj.SadaId != 0 ? 0 : TakaDetailObj.SadaId);
+                SuadaDetId = (TakaDetailObj.SadaDetId == null && TakaDetailObj.SadaDetId != 0 ? 0 : TakaDetailObj.SadaDetId);
+                if (TakaDetailObj.SadaId != 0)
+                {
+                    Expression<Func<SaudTbl, bool>> predicate2 = SaudaTbl => (SaudaTbl.Id == SuadaId && SaudaTbl.DetId == SuadaDetId && SaudaTbl.ItemCode == Global.ItemType);
+                    var getSaudaNo = (await _context.GetFileteredAsync(predicate2)).ToList();
+                    if(getSaudaNo.Count != 0)
+                    {
+                        var SaudaObj = getSaudaNo.FirstOrDefault();
+                        ProdSaudaNo = SaudaObj.SNo;
+                    }
+                    else
+                    {
+                        ProdSaudaNo = "0";                    
+                    }
+                }   
+                await sfDialogService.AlertAsync("Taka No. found successfully", CoreVars.APPMANAGER);
+            }
+            else
+            {
+                await sfDialogService.AlertAsync("Taka No. not found", CoreVars.EXERROR);
+                ProdSrNo = string.Empty;
+                ProdPDate = string.Empty;
+                ProdItemName = string.Empty;
+                ProdMergeNo = string.Empty;
+                ProdGrade = string.Empty;
+                ProdShade = string.Empty;
+                ProdNetWt = 0;
+                ProdMeters = 0;
+                ProdPlant = string.Empty;
+                ProdStatus = string.Empty;
+                ProdInvNo = string.Empty;
+                ProdInvDate = string.Empty;
+                ProdSaudaNo = string.Empty;
+            }
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            await sfDialogService.AlertAsync("FindTaka =>" + ex.Message, CoreVars.EXERROR);
+        }
+    }
+
+    public async void ResetData()
+    {
+        try
+        {
+            this.SpinnerVisibleProperty = true;
+            List<AllRowValue> allRowValues = new List<AllRowValue>();
+            List<RowValue> RowData = new List<RowValue>();        
+            RowData.Add(new RowValue { FldName = "Exported", FldValue = "" });
+            AllRowValue allRowValue = new AllRowValue
+            {
+                AllRowValues = RowData
+            };
+            allRowValues.Add(allRowValue);
+            if (Global.SaudaType == "1")
+            {
+                await RemoveExportMark(allRowValues, "SaudaMst", " and Status <> 'C' and Crtn - DelCrtn > 0 ");
+            }
+            else if(Global.SaudaType == "2")
+            {
+                await RemoveExportMark(allRowValues, "SaudaMst", " and Status <> 'C' and SaudaKg - DelQty > 0 ");
+                await RemoveExportMark(allRowValues, "SaudaDet", " and Status <> 'C' and SaudaKg - DelQty > 0 ");
+            }
+            else if(Global.SaudaType == "3")
+            {                
+                await RemoveExportMark(allRowValues, "DODet", " and Status <> 'C' and DoQty - DelTotQty > 0 ");
+            }            
+            await _context.DeleteAlllItemsAsync<SaudTbl>();
+            allRowValues = new List<AllRowValue>();
+            RowData = new List<RowValue>();
+            RowData.Add(new RowValue { FldName = "Exported", FldValue = "" });
+            allRowValue = new AllRowValue
+            {
+                AllRowValues = RowData
+            };
+            allRowValues.Add(allRowValue);
+            SaveDataObj saveDataObj = new SaveDataObj
+            {
+                MstTblRowData = allRowValues,
+                MstTable = "PRODUCTION",
+                DelSaveWhrCondFldVal = "",
+                SQLConnStr = Global.PtyDBConnStr,
+                WhereCond = " and CrtnSold <> 'Y'"
+            };
+            var json = string.Empty;
+            json = JsonConvert.SerializeObject(saveDataObj);
+            var response = await RazorFunc.CallAPIAsync((string.IsNullOrEmpty(Global.PtyAPIURL) ? Global.APIURL : Global.PtyAPIURL), "UpdtTblData", json);
+            var respStatusCode = response.StatusCode;
+            if (respStatusCode.ToString() == "OK")
+            {
+                var responseBody = await response.Content.ReadAsStringAsync();
+                var retJSON = JsonConvert.DeserializeObject<RetJSON>(responseBody);
+
+                if (retJSON.Status.ToString() == "Error")
+                {
+                    await sfDialogService.AlertAsync("ResetData ==> " + retJSON.Msg.ToString(), CoreVars.EXERROR);
+                }            
+            }            
+            await _context.DeleteAlllItemsAsync<ProductionTbl>();
+            await GetSaudaTblData();
+            await GetProdTblData();
+            this.SpinnerVisibleProperty = false;
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            await sfDialogService.AlertAsync("ResetData =>" + ex.Message, CoreVars.EXERROR);
+        }
+    }
+
+    public async Task<bool> ExportMark(List<AllRowValue> allRowValue, string cTable, string SaudaLststr, string CondFldName, string ErrorTblName )
+    {
+        bool lretval = true;
+        SaveDataObj saveDataObj = new SaveDataObj
+        {
+            MstTblRowData = allRowValue,
+            MstTable = cTable,
+            DelSaveWhrCondFldVal = "",
+            SQLConnStr = Global.PtyDBConnStr,
+            WhereCond = " and " + CondFldName + " in (" + SaudaLststr + ")",
+        };
+        string json = string.Empty;
+        json = JsonConvert.SerializeObject(saveDataObj);
+        var response = await RazorFunc.CallAPIAsync((string.IsNullOrEmpty(Global.PtyAPIURL) ? Global.APIURL : Global.PtyAPIURL), "UpdtTblData", json);
+        var respStatusCode = response.StatusCode;
+        if (respStatusCode.ToString() == "OK")
+        {
+            var responseBody = await response.Content.ReadAsStringAsync();
+            var retJSON = JsonConvert.DeserializeObject<RetJSON>(responseBody);
+
+            if (retJSON.Status.ToString() == "Error")
+            {
+                lretval = false;
+                await sfDialogService.AlertAsync(ErrorTblName+" ==> " + retJSON.Msg.ToString(), CoreVars.EXERROR);
+            }
+        }
+        return lretval;
+    }
+
+    public async Task RemoveExportMark(List<AllRowValue> allRowValue, string cTable, string SaudaLststr)
+    {
+        SaveDataObj saveDataObj = new SaveDataObj
+        {
+            MstTblRowData = allRowValue,
+            MstTable = cTable,
+            DelSaveWhrCondFldVal = "",
+            SQLConnStr = Global.PtyDBConnStr,
+            WhereCond = SaudaLststr,
+        };
+        var json = string.Empty;
+        json = JsonConvert.SerializeObject(saveDataObj);
+        var response = await RazorFunc.CallAPIAsync((string.IsNullOrEmpty(Global.PtyAPIURL) ? Global.APIURL : Global.PtyAPIURL), "UpdtTblData", json);
+        var respStatusCode = response.StatusCode;
+        if (respStatusCode.ToString() == "OK")
+        {
+            var responseBody = await response.Content.ReadAsStringAsync();
+            var retJSON = JsonConvert.DeserializeObject<RetJSON>(responseBody);
+
+            if (retJSON.Status.ToString() == "Error")
+            {
+                await sfDialogService.AlertAsync("ResetData ==> " + retJSON.Msg.ToString(), CoreVars.EXERROR);
+            }
+        }
+    }
+
+    private async void SetItemType(string type)
+    {
+        await _localstorage.SetItemAsync("ItemType", type);
+        Global.ItemType = await _localstorage.GetItemAsync<string>("ItemType");
+        await DispatchDefaultGrid.Refresh();
+    }
+
+    private async Task StatusUpdate(string status)
+{
+    try
+    {
+        List<AllRowValue> allRowValues = new List<AllRowValue>();
+        List<RowValue> RowData = new List<RowValue>();
+
+        RowData.Add(new RowValue { FldName = "Date", FldValue = "SQLGETDATE" });
+        RowData.Add(new RowValue { FldName = "Time", FldValue = DateTime.Now.ToString("HH:mm") });
+        RowData.Add(new RowValue { FldName = "Type", FldValue = status });
+
+        AllRowValue allRowValue = new AllRowValue
+        {
+            AllRowValues = RowData
+        };
+        allRowValues.Add(allRowValue);
+
+        if (allRowValues.Count > 0)
+        {
+            SaveDataObj saveDataObj = new SaveDataObj
+            {
+                MstTblRowData = allRowValues,
+                MstTable = "SyncDet",
+                nAddEdit = 1,
+                DelSaveWhrCondFldVal = "",
+                SQLConnStr = Global.PtyDBConnStr
+            };
+            string json = JsonConvert.SerializeObject(saveDataObj);
+            var response = await RazorFunc.CallAPIAsync(Global.APIURL, "SaveData", json);
+            var respStatusCode = response.StatusCode;
+            if (respStatusCode.ToString() == "OK")
+            {
+                var responseBody = await response.Content.ReadAsStringAsync();
+                var retJSON = JsonConvert.DeserializeObject<RetJSON>(responseBody);
+
+                if (retJSON.Status.ToString() == "Error")
+                {
+                    await sfDialogService.AlertAsync(retJSON.Msg.ToString(), CoreVars.ERROR);
+                }
+            }
+        }
+    }
+    catch (Exception ex)
+    {
+        await sfDialogService.AlertAsync("UserActivityLog => " + ex.Message, CoreVars.EXERROR);
+    }
+}
+private string LastSyncDetI = string.Empty;
+private string LastSyncDetE = string.Empty;
+private async Task GetstatusData(string status)
+{
+    oTblData = new GetTableData
+    {
+        SelectClause = " Top 1 Date, Type, Time ",
+        TableName = " SyncDet ",
+        OrdBy = " Order by Time desc",
+        WhereCond = " where Type = '"+status+"'",
+        SQLConnStr = Global.PtyDBConnStr
+    };
+    var json = JsonConvert.SerializeObject(oTblData);
+    var response = await RazorFunc.CallAPIAsync(Global.APIURL, "GetTableData", json);
+    var respStatusCode = response.StatusCode;
+    if (respStatusCode.ToString() == "OK")
+    {
+        var responseBody = await response.Content.ReadAsStringAsync();
+        var retJSON = JsonConvert.DeserializeObject<RetJSON>(responseBody);
+        if (retJSON.Status.ToString() == "Error")
+        {
+            await sfDialogService.AlertAsync(retJSON.Msg.ToString() + retJSON.ExError, CoreVars.ERROR);
+        }
+        else
+        {
+            DataTbl = JsonConvert.DeserializeObject<DataTable>(retJSON.Data.ToString().Trim());
+            if (DataTbl.Rows.Count > 0)
+            {
+                System.Data.DataRow row = DataTbl.Rows[0];
+                if (row["Type"].ToString().Trim() == "Import")
+                {
+                    LastSyncDetI = row["Time"].ToString().Trim();
+                }
+                else
+                {
+                    LastSyncDetE = row["Time"].ToString().Trim();
+                }
+            }
+                            
+        }
+    }
+}
+}

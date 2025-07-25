@@ -1,0 +1,26 @@
+{
+  "profiles": {
+    "Windows Machine": {
+      "commandName": "MsixPackage",
+      "nativeDebugging": false
+    }
+  }
+}
+
+//{
+//  "Logging": {
+//    "LogLevel": {
+//      "Default": "Information",
+//      "Microsoft.AspNetCore": "Warning"
+//    }
+//  },
+//  "AllowedHosts": "*",
+//  "JSSettings": {
+//    "APIURL": "http://192.168.1.66:44333/api",
+//    "DBServer": "(local)\\SQL2016",
+//    "DBName": "PSN2425",
+//    "UserName": "sa",
+//    "Password": "Jupiter@304#"
+
+//  }
+//}
